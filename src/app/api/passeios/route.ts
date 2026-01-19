@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
 
 const ensureArray = (value: unknown): string[] => {
   if (!value && value !== 0) return [];
