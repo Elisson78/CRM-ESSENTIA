@@ -3,11 +3,11 @@
 ## 🔗 Informações de Conexão
 
 - **Tipo:** PostgreSQL
-- **Host:** `72.62.36.167`
+- **Host:** `<DB_HOST>`
 - **Porta:** `5432`
 - **Banco de Dados:** `essentia`
 - **Usuário:** `postgres`
-- **Senha:** `Bradok41`
+- **Senha:** `<DB_PASSWORD>`
 - **Schema:** `public` (padrão)
 
 ## 📁 Tabelas (Planilhas) do Banco de Dados
@@ -130,11 +130,11 @@ Os dados do CRM Essentia estão organizados nas seguintes **tabelas** (equivalen
    - **General Tab:**
      - Name: `Essentia CRM` (ou qualquer nome)
    - **Connection Tab:**
-     - Host: `72.62.36.167`
+     - Host: `<DB_HOST>`
      - Port: `5432`
      - Maintenance database: `essentia`
      - Username: `postgres`
-     - Password: `Bradok41`
+     - Password: `<DB_PASSWORD>`
    - Clique em `Save`
 
 3. **Navegue até as tabelas:**

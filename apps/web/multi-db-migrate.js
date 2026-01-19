@@ -6,11 +6,11 @@ async function migrate() {
     for (const dbName of databases) {
         console.log(`--- Migrating DB: ${dbName} ---`);
         const pool = new Pool({
-            host: '72.62.36.167',
-            port: 5432,
+            host: process.env.DB_HOST,
+            port: parseInt(process.env.DB_PORT || '5432'),
             database: dbName,
-            user: 'postgres',
-            password: 'Bradok41',
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
             ssl: false
         });
 
