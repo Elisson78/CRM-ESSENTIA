@@ -1,7 +1,6 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { agendamentos, passeios, clientes } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: Request) {
   try {
@@ -14,40 +13,35 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Cliente ID obrigatório' }, { status: 400 });
     }
 
-    // Buscar agendamentos do cliente com dados do passeio
-    const reservasCliente = await db
-      .select({
-        id: agendamentos.id,
-        passeioNome: passeios.nome,
-        data: agendamentos.dataPasseio,
-        pessoas: agendamentos.numeroPessoas,
-        valorTotal: agendamentos.valorTotal,
-        status: agendamentos.status,
-        observacoes: agendamentos.observacoes,
-        criadoEm: agendamentos.criadoEm,
-        passeioId: agendamentos.passeioId
-      })
-      .from(agendamentos)
-      .leftJoin(passeios, eq(agendamentos.passeioId, passeios.id))
-      .where(eq(agendamentos.clienteId, clienteId))
-      .orderBy(desc(agendamentos.criadoEm));
+    // Buscar agendamentos do cliente
+    const agendamentosList = await prisma.agendamento.findMany({
+      where: { clienteId: String(clienteId) },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    console.log(`✅ Encontradas ${reservasCliente.length} reservas para o cliente`);
+    console.log(`✅ Encontradas ${agendamentosList.length} reservas para o cliente`);
 
-    // Formatar dados para o frontend
-    const reservasFormatadas = reservasCliente.map(reserva => ({
-      id: reserva.id,
-      passeioNome: reserva.passeioNome || 'Passeio não encontrado',
-      data: reserva.data,
-      pessoas: reserva.pessoas,
-      valorTotal: reserva.valorTotal,
-      status: reserva.status,
-      metodoPagamento: 'Não informado', // Pode ser melhorado com tabela de pagamentos
-      criadoEm: reserva.criadoEm
+    // Formatar dados para o frontend, buscando o nome do passeio manualmente
+    const reservasFormatadas = await Promise.all(agendamentosList.map(async (agendamento) => {
+      const passeio = await prisma.passeio.findUnique({
+        where: { id: agendamento.passeioId },
+        select: { nome: true }
+      });
+
+      return {
+        id: agendamento.id,
+        passeioNome: passeio?.nome || 'Passeio não encontrado',
+        data: agendamento.dataPasseio,
+        pessoas: agendamento.numeroPessoas,
+        valorTotal: agendamento.valorTotal,
+        status: agendamento.status,
+        metodoPagamento: 'Não informado',
+        criadoEm: agendamento.createdAt
+      };
     }));
 
     return NextResponse.json(reservasFormatadas);
-    
+
   } catch (error) {
     console.error('Erro ao buscar reservas do cliente:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

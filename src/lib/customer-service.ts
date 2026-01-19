@@ -1,8 +1,6 @@
 import { randomUUID } from 'crypto';
-import { db } from '@/lib/db';
-import { clientes, users, agendamentos } from '@/lib/db/schema';
-import { SUPABASE_URL, SUPABASE_SERVICE_KEY, supabaseAdmin } from '@/lib/supabase';
-import { eq } from 'drizzle-orm';
+import { prisma } from './prisma';
+import { hashPassword } from './auth';
 
 interface EnsureClienteInput {
   nome: string;
@@ -14,44 +12,7 @@ export interface EnsureClienteResult {
   clienteId: string;
   novoCliente: boolean;
   senhaGerada: string | null;
-  cliente: typeof clientes.$inferSelect | null;
-}
-
-async function getAuthUserByEmail(email: string) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
-
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Falha ao consultar Supabase Auth:', response.status, errorText);
-      return null;
-    }
-
-    const payload = await response.json();
-    const usersList = Array.isArray(payload?.users)
-      ? payload.users
-      : Array.isArray(payload)
-      ? payload
-      : [];
-
-    const authUser = usersList.find((user: any) => user?.email?.toLowerCase() === email.toLowerCase()) ?? null;
-    console.log('ℹ️ Supabase Auth lookup:', authUser ? `encontrado ${authUser.id}` : 'não encontrado');
-    return authUser;
-  } catch (error) {
-    console.error('❌ Erro ao consultar usuário no Supabase Auth:', error);
-    return null;
-  }
+  cliente: any;
 }
 
 async function persistClienteDados(
@@ -65,131 +26,112 @@ async function persistClienteDados(
 ) {
   const now = new Date();
 
-  await db
-    .insert(users)
-    .values({
-      id: clienteId,
-      email,
-      nome,
-      userType: 'cliente',
-      telefone: telefone ?? null,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: users.email,
-      set: {
-        id: clienteId,
+  // Try to find if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    // Update existing user
+    await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+        nome,
+        telefone: telefone ?? null,
+        updatedAt: now,
+      },
+    });
+    clienteId = existingUser.id;
+  } else {
+    // Upsert user if needed
+    await prisma.user.upsert({
+      where: { email },
+      update: {
         nome,
         userType: 'cliente',
         telefone: telefone ?? null,
         updatedAt: now,
       },
+      create: {
+        id: clienteId,
+        email,
+        nome,
+        userType: 'cliente',
+        telefone: telefone ?? null,
+        createdAt: now,
+        updatedAt: now,
+      },
     });
+  }
 
-  await db
-    .insert(clientes)
-    .values({
+  // Persist/Update Cliente data
+  const clienteRegistro = await prisma.cliente.upsert({
+    where: { email },
+    update: {
+      nome,
+      telefone: telefone ?? null,
+      status: 'ativo',
+      atualizadoEm: now,
+    },
+    create: {
       id: clienteId,
       nome,
       email,
       telefone: telefone ?? null,
       status: 'ativo',
       atualizadoEm: now,
-    })
-    .onConflictDoUpdate({
-      target: clientes.email,
-      set: {
-        id: clienteId,
-        nome,
-        telefone: telefone ?? null,
-        status: 'ativo',
-        atualizadoEm: now,
-      },
-    });
+    },
+  });
 
   if (oldClienteId && oldClienteId !== clienteId) {
-    await db.update(agendamentos).set({ clienteId }).where(eq(agendamentos.clienteId, oldClienteId));
+    await prisma.agendamento.updateMany({
+      where: { clienteId: oldClienteId },
+      data: { clienteId: clienteId },
+    });
   }
 
-  const clienteRegistro = await db
-    .select()
-    .from(clientes)
-    .where(eq(clientes.id, clienteId))
-    .limit(1);
-
-  return clienteRegistro[0] ?? null;
+  return clienteRegistro;
 }
 
 export async function ensureClienteExiste({ nome, email, telefone }: EnsureClienteInput): Promise<EnsureClienteResult> {
-  const existingCliente = await db
-    .select()
-    .from(clientes)
-    .where(eq(clientes.email, email))
-    .limit(1);
+  const existingCliente = await prisma.cliente.findUnique({
+    where: { email },
+  });
 
-  const existingUser = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !supabaseAdmin) {
-    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY ausente. Utilizando fluxo de fallback apenas com banco de dados.');
-
-    const clienteId = existingCliente[0]?.id ?? existingUser[0]?.id ?? randomUUID();
-    const clienteRegistro = await persistClienteDados(clienteId, {
-      nome,
-      email,
-      telefone,
-      oldClienteId: existingCliente[0]?.id ?? existingUser[0]?.id ?? null,
-    });
-
-    return {
-      clienteId,
-      novoCliente: existingCliente.length === 0,
-      senhaGerada: null,
-      cliente: clienteRegistro,
-    };
-  }
-
-  const existingAuthUser = await getAuthUserByEmail(email);
-
-  let clienteId: string;
+  let clienteId: string = existingCliente?.id ?? existingUser?.id ?? randomUUID();
   let senhaGerada: string | null = null;
   let novoCliente = false;
 
-  if (existingAuthUser) {
-    clienteId = existingAuthUser.id;
+  if (existingUser) {
+    clienteId = existingUser.id;
   } else {
+    novoCliente = true;
     senhaGerada = Math.random().toString(36).slice(-10);
+    const hashedPassword = await hashPassword(senhaGerada);
 
-    const { data: createdAuth, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: senhaGerada,
-      email_confirm: true,
-      user_metadata: {
+    await prisma.user.create({
+      data: {
+        id: clienteId,
+        email,
         nome,
+        passwordHash: hashedPassword,
         userType: 'cliente',
         telefone: telefone ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     });
-
-    if (authError || !createdAuth?.user) {
-      console.error('❌ Erro ao criar usuário no Supabase Auth:', authError?.message);
-      throw new Error(`Erro ao criar usuário no Supabase Auth: ${authError?.message ?? 'desconhecido'}`);
-    }
-
-    clienteId = createdAuth.user.id;
-    novoCliente = true;
-    console.log('✅ Usuário criado no Supabase Auth:', clienteId);
   }
 
   const clienteRegistro = await persistClienteDados(clienteId, {
     nome,
     email,
     telefone,
-    oldClienteId: existingCliente[0]?.id ?? existingUser[0]?.id ?? null,
+    oldClienteId: existingCliente?.id ?? null,
   });
 
   return {

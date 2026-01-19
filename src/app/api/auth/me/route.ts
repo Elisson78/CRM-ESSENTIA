@@ -1,34 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/database";
+export const dynamic = "force-dynamic";
+import { NextResponse } from "next/server";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
+  const session = await getSession();
+
+  if (!session) {
+    return NextResponse.json({ user: null });
+  }
+
   try {
-    const accessToken = request.cookies.get("sb-access-token")?.value;
-    const refreshToken = request.cookies.get("sb-refresh-token")?.value;
-
-    if (!accessToken || !refreshToken) {
-      return NextResponse.json({ user: null }, { status: 200 });
-    }
-
-    const client = await getSupabaseClient();
-    const {
-      data: { user },
-      error,
-    } = await client.auth.getUser(accessToken);
-
-    if (error || !user) {
-      return NextResponse.json({ user: null }, { status: 200 });
-    }
-
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        ...user.user_metadata,
-      },
+    // Fetch fresh user data from DB
+    const user = await prisma.user.findUnique({
+      where: { id: session.id as string },
     });
+
+    if (!user) {
+      return NextResponse.json({ user: null });
+    }
+
+    // Return safe user data
+    const safeUser = {
+      id: user.id,
+      email: user.email,
+      nome: user.nome,
+      userType: user.userType,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      profileImage: user.profileImageUrl,
+      telefone: user.telefone,
+      endereco: user.endereco,
+      cpf: user.cpf,
+      data_nascimento: user.dataNascimento,
+    };
+
+    return NextResponse.json({ user: safeUser });
   } catch (error) {
-    console.error("Erro ao verificar usuário:", error);
-    return NextResponse.json({ user: null }, { status: 200 });
+    console.error("Me route error:", error);
+    return NextResponse.json({ user: null }, { status: 500 });
   }
 }

@@ -1,6 +1,5 @@
 "use client";
 import { Button } from "./ui/button";
-import { ModeToggle } from "./mode-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 import { User, LogOut, Menu, X } from "lucide-react";
@@ -10,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Header() {
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
+
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
@@ -36,41 +35,41 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white border-b shadow-md">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold text-blue-600">ESSENTIA</h1>
           <span className="ml-2 text-sm text-muted-foreground hidden sm:block">
-          
+
           </span>
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
-          <button 
+          <button
             onClick={() => scrollToSection('roteiros')}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Roteiros
           </button>
-          <button 
+          <button
             onClick={() => scrollToSection('destinos')}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Destinos
           </button>
-          <button 
+          <button
             onClick={scrollToPasseios}
             className="text-muted-foreground hover:text-foreground transition-colors font-medium text-orange-500 hover:text-orange-600"
           >
             Passeios
           </button>
-          <button 
+          <button
             onClick={() => scrollToSection('diferenciais')}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             Por que nos escolher
           </button>
-          <button 
+          <button
             onClick={() => scrollToSection('contato')}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
@@ -111,7 +110,6 @@ export default function Header() {
               </Link>
             </div>
           )}
-          <ModeToggle />
         </div>
       </div>
 
@@ -127,7 +125,7 @@ export default function Header() {
               className="fixed inset-0 bg-black/50 z-40 md:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            
+
             {/* Menu Slide */}
             <motion.div
               initial={{ x: "-100%" }}
@@ -153,7 +151,7 @@ export default function Header() {
 
                 {/* Navegação */}
                 <nav className="flex-1 space-y-4">
-                  <button 
+                  <button
                     onClick={() => {
                       scrollToSection('roteiros');
                       setIsMobileMenuOpen(false);
@@ -162,8 +160,8 @@ export default function Header() {
                   >
                     🗺️ Roteiros
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       scrollToSection('destinos');
                       setIsMobileMenuOpen(false);
@@ -172,8 +170,8 @@ export default function Header() {
                   >
                     🏛️ Destinos
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       scrollToPasseios();
                       setIsMobileMenuOpen(false);
@@ -182,8 +180,8 @@ export default function Header() {
                   >
                     🎯 Passeios
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       scrollToSection('diferenciais');
                       setIsMobileMenuOpen(false);
@@ -192,8 +190,8 @@ export default function Header() {
                   >
                     ⭐ Por que nos escolher
                   </button>
-                  
-                  <button 
+
+                  <button
                     onClick={() => {
                       scrollToSection('contato');
                       setIsMobileMenuOpen(false);

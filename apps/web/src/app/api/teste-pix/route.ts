@@ -1,28 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { agendamentos, passeios } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { ensureClienteExiste } from '@/lib/customer-service';
-import { pgTable, text, real, timestamp, varchar } from "drizzle-orm/pg-core";
-
-const reservas = pgTable("reservas", {
-  id: varchar("id").primaryKey(),
-  passeioId: varchar("passeio_id").notNull(),
-  passeioNome: varchar("passeio_nome").notNull(),
-  data: timestamp("data").notNull(),
-  pessoas: real("pessoas").notNull(),
-  tipoReserva: varchar("tipo_reserva").notNull(),
-  valorTotal: real("valor_total").notNull(),
-  status: varchar("status").default("confirmada"),
-  clienteNome: varchar("cliente_nome").notNull(),
-  clienteEmail: varchar("cliente_email").notNull(),
-  clienteTelefone: varchar("cliente_telefone"),
-  clienteObservacoes: text("cliente_observacoes"),
-  metodoPagamento: varchar("metodo_pagamento").notNull(),
-  criadoEm: timestamp("criado_em").defaultNow(),
-  atualizadoEm: timestamp("atualizado_em").defaultNow(),
-});
 
 export async function POST(request: Request) {
   try {
@@ -31,7 +10,7 @@ export async function POST(request: Request) {
     console.log('🔍 Dados recebidos para pagamento PIX:', data);
 
     if (!data.passeioId || !data.passeioNome || !data.data || !data.pessoas ||
-        !data.valorTotal || !data.clienteNome || !data.clienteEmail || !data.metodoPagamento) {
+      !data.valorTotal || !data.clienteNome || !data.clienteEmail || !data.metodoPagamento) {
       return NextResponse.json({ error: 'Dados obrigatórios em falta' }, { status: 400 });
     }
 
@@ -59,13 +38,10 @@ export async function POST(request: Request) {
       clienteRegistro = resultado.cliente;
     }
 
-    const passeio = await db
-      .select()
-      .from(passeios)
-      .where(eq(passeios.id, data.passeioId))
-      .limit(1);
+    const passeioRes = await db.query('SELECT * FROM passeios WHERE id = $1', [data.passeioId]);
+    const passeio = passeioRes.rows[0];
 
-    if (passeio.length === 0) {
+    if (!passeio) {
       return NextResponse.json({ error: 'Passeio não encontrado' }, { status: 404 });
     }
 
@@ -76,50 +52,54 @@ export async function POST(request: Request) {
     const percentualComissao = 30;
     const valorComissao = valorFinal * (percentualComissao / 100);
 
-    await db.insert(agendamentos).values({
-      id: agendamentoId,
-      passeioId: data.passeioId,
+    const insertQuery = `
+      INSERT INTO agendamentos (
+        id, passeio_id, cliente_id, data_passeio, numero_pessoas, 
+        valor_total, valor_comissao, percentual_comissao, status, observacoes, criado_em, atualizado_em
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmadas', $9, NOW(), NOW())
+      RETURNING *
+    `;
+
+    const insertRes = await db.query(insertQuery, [
+      agendamentoId,
+      data.passeioId,
       clienteId,
-      dataPasseio: new Date(data.data).toISOString().split('T')[0],
-      numeroPessoas: data.pessoas,
-      valorTotal: valorFinal,
+      new Date(data.data).toISOString().split('T')[0],
+      data.pessoas,
+      valorFinal,
       valorComissao,
       percentualComissao,
-      status: 'confirmadas',
-      observacoes: data.clienteObservacoes || null,
-    });
+      data.clienteObservacoes || null
+    ]);
 
-    const reservaId = `reserva_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    const novaReserva = await db.insert(reservas).values({
-      id: reservaId,
-      passeioId: data.passeioId,
-      passeioNome: data.passeioNome,
-      data: new Date(data.data),
-      pessoas: data.pessoas,
-      tipoReserva: data.tipoReserva || 'individual',
-      valorTotal: valorFinal,
-      clienteNome: data.clienteNome,
-      clienteEmail: data.clienteEmail,
-      clienteTelefone: data.clienteTelefone,
-      clienteObservacoes: data.clienteObservacoes,
-      metodoPagamento: 'pix',
-      status: 'confirmada',
-    }).returning();
+    const agendamento = insertRes.rows[0];
 
     console.log('✅ Pagamento PIX processado com sucesso:', {
       clienteId,
       agendamentoId,
-      reservaId,
       valorFinal
     });
+
+    // Map back to camelCase for consistency
+    const agendamentoCamels = {
+      id: agendamento.id,
+      passeioId: agendamento.passeio_id,
+      clienteId: agendamento.cliente_id,
+      dataPasseio: agendamento.data_passeio,
+      numeroPessoas: agendamento.numero_pessoas,
+      valorTotal: parseFloat(agendamento.valor_total),
+      valorComissao: parseFloat(agendamento.valor_comissao),
+      percentualComissao: agendamento.percentual_comissao,
+      status: agendamento.status,
+      observacoes: agendamento.observacoes
+    };
 
     return NextResponse.json({
       success: true,
       clienteId,
       agendamentoId,
-      reservaId,
-      reserva: novaReserva[0],
+      reservaId: `reserva_${Date.now()}`,
+      agendamento: agendamentoCamels,
       senhaGerada,
       novoCliente,
       cliente: clienteRegistro,

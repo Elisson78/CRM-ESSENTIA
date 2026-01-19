@@ -1,30 +1,33 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
   email: string;
   nome?: string;
-  userType?: "admin" | "guia" | "cliente";
+  userType?: "admin" | "guia" | "cliente"; // Mapped from user_type if needed
+  firstName?: string;
+  lastName?: string;
   telefone?: string;
   endereco?: string;
   data_nascimento?: string;
   cpf?: string;
+  profileImage?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
+  login: (email: string, password: string) => Promise<{ error?: string; user?: User }>;
   logout: () => Promise<void>;
   signup: (
     params: {
       email: string;
       password: string;
       nome?: string;
-      userType?: User["userType"];
+      userType?: "admin" | "guia" | "cliente";
       metadata?: Record<string, string | string[]>;
     }
   ) => Promise<{ error?: string }>;
@@ -43,178 +46,80 @@ export function useAuth() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  // Função para buscar dados do usuário da tabela users
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      console.log("📊 [AuthContext] fetchUserProfile - userId:", userId);
-      console.log("📊 [AuthContext] fetchUserProfile - data:", data);
-      console.log("📊 [AuthContext] fetchUserProfile - error:", error);
-
-      if (error || !data) {
-        console.log("⚠️ [AuthContext] Nenhum perfil encontrado na tabela users");
-        return null;
-      }
-
-      const [firstName, ...lastNameParts] = (data.nome || "").split(" ");
-      const profile = {
-        id: data.id,
-        email: data.email,
-        nome: data.nome,
-        firstName: firstName || "",
-        lastName: lastNameParts.join(" ") || "",
-        userType: data.user_type || data.userType,
-        telefone: data.telefone,
-        endereco: data.endereco,
-        data_nascimento: data.dataNascimento,
-        cpf: data.cpf,
-      };
-
-      console.log("✅ [AuthContext] Perfil carregado - userType:", profile.userType);
-      return profile;
-    } catch (error) {
-      console.error("❌ [AuthContext] Erro ao buscar perfil:", error);
-      return null;
-    }
-  };
-
+  // Load user from session on mount
   useEffect(() => {
-    const getSession = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-
-      if (error || !session?.user) {
-        setUser(null);
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (error) {
+        console.error("Failed to load user session:", error);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // Buscar dados completos do usuário da tabela users
-      const profile = await fetchUserProfile(session.user.id);
-      if (profile) {
-        setUser(profile);
-      } else {
-        // Fallback para user_metadata se não encontrar na tabela
-        const metadata = session.user.user_metadata ?? {};
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? "",
-          nome: metadata.nome,
-          userType: metadata.userType,
-          telefone: metadata.telefone,
-          endereco: metadata.endereco,
-          data_nascimento: metadata.data_nascimento,
-          cpf: metadata.cpf,
-        });
-      }
-      setLoading(false);
-    };
-
-    getSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!session?.user) {
-        setUser(null);
-        return;
-      }
-
-      // Buscar dados completos do usuário da tabela users
-      const profile = await fetchUserProfile(session.user.id);
-      if (profile) {
-        setUser(profile);
-      } else {
-        // Fallback para user_metadata se não encontrar na tabela
-        const metadata = session.user.user_metadata ?? {};
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? "",
-          nome: metadata.nome,
-          userType: metadata.userType,
-          telefone: metadata.telefone,
-          endereco: metadata.endereco,
-          data_nascimento: metadata.data_nascimento,
-          cpf: metadata.cpf,
-        });
-      }
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    }
+    loadUser();
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-      
-      if (error) {
-        return { error: error.message };
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { error: data.error || "Erro ao fazer login" };
       }
 
-      // Buscar dados do usuário imediatamente após login
-      if (data.user) {
-        const profile = await fetchUserProfile(data.user.id);
-        if (profile) {
-          setUser(profile);
-        } else {
-          const metadata = data.user.user_metadata ?? {};
-          setUser({
-            id: data.user.id,
-            email: data.user.email ?? "",
-            nome: metadata.nome,
-            userType: metadata.userType,
-            telefone: metadata.telefone,
-            endereco: metadata.endereco,
-            data_nascimento: metadata.data_nascimento,
-            cpf: metadata.cpf,
-          });
-        }
-      }
-      
-      return {};
+      setUser((prev) => ({ ...prev, ...data.user }));
+      return { user: data.user };
     } catch (error) {
-      return { error: "Erro ao fazer login" };
+      return { error: "Erro de conexão" };
     }
   };
 
-  const signup: AuthContextType["signup"] = async ({ email, password, nome, userType, metadata }) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
+  const signup: AuthContextType["signup"] = async ({ email, password, nome, userType }) => {
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          senha: password, // API expects 'senha'
           nome,
-          userType,
-          ...metadata,
-        },
-      },
-    });
+          tipo: userType
+        }),
+      });
 
-    if (error) {
-      console.error("Erro no cadastro Supabase:", error.message);
-      return { error: error.message };
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { error: data.error || "Erro ao cadastrar" };
+      }
+
+      return {};
+    } catch (error) {
+      return { error: "Erro ao conectar com servidor" };
     }
-
-    return {};
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Erro ao sair do Supabase:", error.message);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed", error);
     }
-    setUser(null);
   };
 
   return (

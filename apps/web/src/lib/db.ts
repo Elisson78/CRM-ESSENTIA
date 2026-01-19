@@ -1,19 +1,21 @@
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { Pool } from 'pg';
 
-const connectionString = process.env.SUPABASE_DB_URL ?? process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error(
-    "SUPABASE_DB_URL (or DATABASE_URL) must be set. Provide your Supabase Postgres connection string to connect to the database.",
-  );
-}
-
-const client = postgres(connectionString, {
-  ssl: "require",
-  max: 5,
+const pool = new Pool({
+    host: process.env.DB_HOST || '72.62.36.167',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'essentia',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'Bradok41',
+    ssl: false // Disable SSL if not needed, or configure it if required
 });
 
-export const db = drizzle(client);
+console.log(`🔌 DB Connection: ${process.env.DB_HOST || '72.62.36.167'}:${process.env.DB_PORT || '5432'} - DB: ${process.env.DB_NAME || 'essentia'}`);
 
-export * from "./db/schema";
+export const db = {
+    query: (text: string, params?: any[]) => {
+        // console.log('SQL:', text.slice(0, 100).replace(/\n/g, ' '));
+        return pool.query(text, params);
+    },
+};
+
+export default pool;

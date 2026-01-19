@@ -1,20 +1,9 @@
 'use server';
 
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
-import { db } from './db';
-import {
-  agendamentos,
-  passeios,
-  clientes,
-  guias,
-  type Agendamento,
-  type Passeio,
-} from './db/schema';
+import { prisma } from './prisma';
 
-type AgendamentoInsert = typeof agendamentos.$inferInsert;
-
-const VALID_STATUSES = new Set<Agendamento['status']>([
+const VALID_STATUSES = new Set([
   'em_progresso',
   'pendente_cliente',
   'confirmadas',
@@ -22,17 +11,51 @@ const VALID_STATUSES = new Set<Agendamento['status']>([
   'canceladas',
 ]);
 
-type AgendamentoRow = {
-  agendamento: Agendamento;
-  passeio: Passeio | null;
-  cliente: typeof clientes.$inferSelect | null;
-  guia: typeof guias.$inferSelect | null;
-};
+export async function listAgendamentos() {
+  const agendamentosList = await prisma.agendamento.findMany();
 
-export type AgendamentoKanban = ReturnType<typeof mapRowToKanban>;
+  const result = await Promise.all(agendamentosList.map(async (agendamento) => {
+    const [passeio, cliente, guia] = await Promise.all([
+      prisma.passeio.findUnique({ where: { id: agendamento.passeioId } }),
+      agendamento.clienteId ? prisma.cliente.findUnique({ where: { id: agendamento.clienteId } }) : null,
+      agendamento.guiaId ? prisma.guia.findUnique({ where: { id: agendamento.guiaId } }) : null,
+    ]);
 
-function mapRowToKanban(row: AgendamentoRow) {
-  const { agendamento, passeio, cliente, guia } = row;
+    return {
+      id: agendamento.id,
+      passeio_id: agendamento.passeioId,
+      cliente_id: agendamento.clienteId,
+      guia_id: agendamento.guiaId,
+      data_passeio: agendamento.dataPasseio,
+      numero_pessoas: agendamento.numeroPessoas ?? 1,
+      valor_total: Number(agendamento.valorTotal ?? 0),
+      valor_comissao: Number(agendamento.valorComissao ?? 0),
+      percentual_comissao: agendamento.percentualComissao ?? 30,
+      status: agendamento.status,
+      observacoes: agendamento.observacoes,
+      passeio_nome: passeio?.nome ?? null,
+      cliente_nome: cliente?.nome ?? null,
+      guia_nome: guia?.nome ?? null,
+      criado_em: agendamento.createdAt ?? null,
+      atualizado_em: agendamento.updatedAt ?? null,
+    };
+  }));
+
+  return result;
+}
+
+export async function getAgendamentoById(id: string) {
+  const agendamento = await prisma.agendamento.findUnique({
+    where: { id },
+  });
+
+  if (!agendamento) return null;
+
+  const [passeio, cliente, guia] = await Promise.all([
+    prisma.passeio.findUnique({ where: { id: agendamento.passeioId } }),
+    agendamento.clienteId ? prisma.cliente.findUnique({ where: { id: agendamento.clienteId } }) : null,
+    agendamento.guiaId ? prisma.guia.findUnique({ where: { id: agendamento.guiaId } }) : null,
+  ]);
 
   return {
     id: agendamento.id,
@@ -47,48 +70,11 @@ function mapRowToKanban(row: AgendamentoRow) {
     status: agendamento.status,
     observacoes: agendamento.observacoes,
     passeio_nome: passeio?.nome ?? null,
-    cliente_nome: cliente?.nome ?? null,
-    guia_nome: guia?.nome ?? null,
-    criado_em: agendamento.criadoEm ?? null,
-    atualizado_em: agendamento.atualizadoEm ?? null,
+    cliente_nome: cliente?.nome || "Cliente não informado",
+    guia_nome: guia?.nome || "Guia não informado",
+    criado_em: agendamento.createdAt ?? null,
+    atualizado_em: agendamento.updatedAt ?? null,
   };
-}
-
-export async function listAgendamentos() {
-  const rows = await db
-    .select({
-      agendamento: agendamentos,
-      passeio: passeios,
-      cliente: clientes,
-      guia: guias,
-    })
-    .from(agendamentos)
-    .leftJoin(passeios, eq(agendamentos.passeioId, passeios.id))
-    .leftJoin(clientes, eq(agendamentos.clienteId, clientes.id))
-    .leftJoin(guias, eq(agendamentos.guiaId, guias.id));
-
-  return rows.map(mapRowToKanban);
-}
-
-export async function getAgendamentoById(id: string) {
-  const rows = await db
-    .select({
-      agendamento: agendamentos,
-      passeio: passeios,
-      cliente: clientes,
-      guia: guias,
-    })
-    .from(agendamentos)
-    .leftJoin(passeios, eq(agendamentos.passeioId, passeios.id))
-    .leftJoin(clientes, eq(agendamentos.clienteId, clientes.id))
-    .leftJoin(guias, eq(agendamentos.guiaId, guias.id))
-    .where(eq(agendamentos.id, id));
-
-  if (rows.length === 0) {
-    return null;
-  }
-
-  return mapRowToKanban(rows[0]);
 }
 
 export interface CreateAgendamentoInput {
@@ -102,17 +88,14 @@ export interface CreateAgendamentoInput {
 }
 
 export async function createAgendamento(input: CreateAgendamentoInput) {
-  const passeioRegistro = await db
-    .select()
-    .from(passeios)
-    .where(eq(passeios.id, input.passeioId))
-    .limit(1);
+  const passeio = await prisma.passeio.findUnique({
+    where: { id: input.passeioId },
+  });
 
-  if (passeioRegistro.length === 0) {
+  if (!passeio) {
     throw new Error('Passeio informado não foi encontrado.');
   }
 
-  const passeio = passeioRegistro[0];
   const numeroPessoas = Math.max(1, input.numeroPessoas || 1);
   const percentualComissao = input.percentualComissao ?? 30;
   const valorTotal = Number(passeio.preco) * numeroPessoas;
@@ -120,17 +103,19 @@ export async function createAgendamento(input: CreateAgendamentoInput) {
 
   const id = randomUUID();
 
-  await db.insert(agendamentos).values({
-    id,
-    passeioId: input.passeioId,
-    clienteId: input.clienteId ?? null,
-    guiaId: input.guiaId ?? null,
-    dataPasseio: input.dataPasseio,
-    numeroPessoas,
-    observacoes: input.observacoes ?? null,
-    percentualComissao,
-    valorTotal,
-    valorComissao,
+  await prisma.agendamento.create({
+    data: {
+      id,
+      passeioId: input.passeioId,
+      clienteId: input.clienteId ?? null,
+      guiaId: input.guiaId ?? null,
+      dataPasseio: input.dataPasseio,
+      numeroPessoas,
+      observacoes: input.observacoes ?? null,
+      percentualComissao,
+      valorTotal,
+      valorComissao,
+    },
   });
 
   return getAgendamentoById(id);
@@ -144,51 +129,28 @@ export interface UpdateAgendamentoInput {
   numeroPessoas?: number;
   observacoes?: string | null;
   percentualComissao?: number;
-  status?: Agendamento['status'];
+  status?: string;
 }
 
 export async function updateAgendamento(id: string, input: UpdateAgendamentoInput) {
-  const registros = await db
-    .select()
-    .from(agendamentos)
-    .where(eq(agendamentos.id, id))
-    .limit(1);
+  const atual = await prisma.agendamento.findUnique({
+    where: { id },
+  });
 
-  if (registros.length === 0) {
-    return null;
-  }
-
-  const atual = registros[0];
+  if (!atual) return null;
 
   if (input.status && !VALID_STATUSES.has(input.status)) {
     throw new Error('Status inválido para agendamento.');
   }
 
-  const updates: Partial<AgendamentoInsert> = {};
+  const data: any = {};
 
-  if (input.passeioId !== undefined) {
-    updates.passeioId = input.passeioId;
-  }
-
-  if (input.clienteId !== undefined) {
-    updates.clienteId = input.clienteId ?? null;
-  }
-
-  if (input.guiaId !== undefined) {
-    updates.guiaId = input.guiaId ?? null;
-  }
-
-  if (input.dataPasseio !== undefined) {
-    updates.dataPasseio = input.dataPasseio;
-  }
-
-  if (input.observacoes !== undefined) {
-    updates.observacoes = input.observacoes ?? null;
-  }
-
-  if (input.status !== undefined) {
-    updates.status = input.status;
-  }
+  if (input.passeioId !== undefined) data.passeioId = input.passeioId;
+  if (input.clienteId !== undefined) data.clienteId = input.clienteId ?? null;
+  if (input.guiaId !== undefined) data.guiaId = input.guiaId ?? null;
+  if (input.dataPasseio !== undefined) data.dataPasseio = input.dataPasseio;
+  if (input.observacoes !== undefined) data.observacoes = input.observacoes ?? null;
+  if (input.status !== undefined) data.status = input.status;
 
   const deveRecalcularValores =
     input.passeioId !== undefined ||
@@ -200,42 +162,44 @@ export async function updateAgendamento(id: string, input: UpdateAgendamentoInpu
 
   if (deveRecalcularValores) {
     const passeioIdParaUsar = input.passeioId ?? atual.passeioId;
+    const passeioAtual = await prisma.passeio.findUnique({
+      where: { id: passeioIdParaUsar },
+    });
 
-    const passeioAtual = await db
-      .select()
-      .from(passeios)
-      .where(eq(passeios.id, passeioIdParaUsar))
-      .limit(1);
-
-    if (passeioAtual.length === 0) {
+    if (!passeioAtual) {
       throw new Error('Passeio informado não foi encontrado.');
     }
 
-    const valorTotal = Number(passeioAtual[0].preco) * numeroPessoas;
-    updates.valorTotal = valorTotal;
-    updates.valorComissao = valorTotal * (percentualComissao / 100);
-    updates.percentualComissao = percentualComissao;
-    updates.numeroPessoas = numeroPessoas;
+    const valorTotal = Number(passeioAtual.preco) * numeroPessoas;
+    data.valorTotal = valorTotal;
+    data.valorComissao = valorTotal * (percentualComissao / 100);
+    data.percentualComissao = percentualComissao;
+    data.numeroPessoas = numeroPessoas;
   } else if (input.numeroPessoas !== undefined) {
-    updates.numeroPessoas = numeroPessoas;
+    data.numeroPessoas = numeroPessoas;
   }
 
-  updates.atualizadoEm = new Date();
+  data.updatedAt = new Date();
 
-  await db.update(agendamentos).set(updates).where(eq(agendamentos.id, id));
+  await prisma.agendamento.update({
+    where: { id },
+    data,
+  });
 
   return getAgendamentoById(id);
 }
 
-export async function updateAgendamentoStatus(id: string, status: Agendamento['status']) {
+export async function updateAgendamentoStatus(id: string, status: string) {
   return updateAgendamento(id, { status });
 }
 
 export async function deleteAgendamento(id: string) {
-  const resultado = await db
-    .delete(agendamentos)
-    .where(eq(agendamentos.id, id))
-    .returning();
-
-  return resultado.length > 0;
+  try {
+    await prisma.agendamento.delete({
+      where: { id },
+    });
+    return true;
+  } catch (error) {
+    return false;
+  }
 }

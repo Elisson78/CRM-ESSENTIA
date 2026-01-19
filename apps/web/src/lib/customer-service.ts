@@ -1,8 +1,6 @@
 import { randomUUID } from 'crypto';
-import { db } from '@/lib/db';
-import { clientes, users, agendamentos } from '@/lib/db/schema';
-import { SUPABASE_URL, SUPABASE_SERVICE_KEY, supabaseAdmin } from '@/lib/supabase';
-import { eq } from 'drizzle-orm';
+import { db } from './db';
+import { hashPassword } from './auth';
 
 interface EnsureClienteInput {
   nome: string;
@@ -14,44 +12,7 @@ export interface EnsureClienteResult {
   clienteId: string;
   novoCliente: boolean;
   senhaGerada: string | null;
-  cliente: typeof clientes.$inferSelect | null;
-}
-
-async function getAuthUserByEmail(email: string) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
-
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(email)}`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Falha ao consultar Supabase Auth:', response.status, errorText);
-      return null;
-    }
-
-    const payload = await response.json();
-    const usersList = Array.isArray(payload?.users)
-      ? payload.users
-      : Array.isArray(payload)
-      ? payload
-      : [];
-
-    const authUser = usersList.find((user: any) => user?.email?.toLowerCase() === email.toLowerCase()) ?? null;
-    console.log('ℹ️ Supabase Auth lookup:', authUser ? `encontrado ${authUser.id}` : 'não encontrado');
-    return authUser;
-  } catch (error) {
-    console.error('❌ Erro ao consultar usuário no Supabase Auth:', error);
-    return null;
-  }
+  cliente: any;
 }
 
 async function persistClienteDados(
@@ -65,131 +26,86 @@ async function persistClienteDados(
 ) {
   const now = new Date();
 
-  await db
-    .insert(users)
-    .values({
-      id: clienteId,
-      email,
-      nome,
-      userType: 'cliente',
-      telefone: telefone ?? null,
-      createdAt: now,
-      updatedAt: now,
-    })
-    .onConflictDoUpdate({
-      target: users.email,
-      set: {
-        id: clienteId,
-        nome,
-        userType: 'cliente',
-        telefone: telefone ?? null,
-        updatedAt: now,
-      },
-    });
+  // Try to find if user already exists
+  const userRes = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+  const existingUser = userRes.rows[0];
 
-  await db
-    .insert(clientes)
-    .values({
-      id: clienteId,
-      nome,
-      email,
-      telefone: telefone ?? null,
-      status: 'ativo',
-      atualizadoEm: now,
-    })
-    .onConflictDoUpdate({
-      target: clientes.email,
-      set: {
-        id: clienteId,
-        nome,
-        telefone: telefone ?? null,
-        status: 'ativo',
-        atualizadoEm: now,
-      },
-    });
-
-  if (oldClienteId && oldClienteId !== clienteId) {
-    await db.update(agendamentos).set({ clienteId }).where(eq(agendamentos.clienteId, oldClienteId));
+  if (existingUser) {
+    // Update existing user
+    await db.query(
+      'UPDATE users SET nome = $1, telefone = $2, updated_at = NOW() WHERE id = $3',
+      [nome, telefone ?? null, existingUser.id]
+    );
+    clienteId = existingUser.id;
+  } else {
+    // Insert new user
+    // Upsert logic for users table: insert on conflict update
+    const insertUserQuery = `
+      INSERT INTO users (id, email, nome, user_type, telefone, created_at, updated_at)
+      VALUES ($1, $2, $3, 'cliente', $4, NOW(), NOW())
+      ON CONFLICT (email) DO UPDATE 
+      SET nome = EXCLUDED.nome, telefone = EXCLUDED.telefone, updated_at = NOW()
+      RETURNING id
+    `;
+    const upsertRes = await db.query(insertUserQuery, [clienteId, email, nome, telefone ?? null]);
+    // If we passed an ID, it uses it. If it existed, it updates. 
+    // If it existed, the RETURNING id will match existing.
+    if (upsertRes.rows[0]) clienteId = upsertRes.rows[0].id;
   }
 
-  const clienteRegistro = await db
-    .select()
-    .from(clientes)
-    .where(eq(clientes.id, clienteId))
-    .limit(1);
+  // Persist/Update Cliente data
+  const insertClienteQuery = `
+    INSERT INTO clientes (id, nome, email, telefone, status, atualizado_em)
+    VALUES ($1, $2, $3, $4, 'ativo', NOW())
+    ON CONFLICT (email) DO UPDATE 
+    SET nome = EXCLUDED.nome, telefone = EXCLUDED.telefone, status = 'ativo', atualizado_em = NOW()
+    RETURNING * 
+  `;
+  // Note: cliente table might rely on 'id' being consistent with user 'id' or not.
+  // In the original code, it passed 'clienteId' to create.
+  // We use the same 'clienteId' resolved from user logic.
 
-  return clienteRegistro[0] ?? null;
+  console.log('📝 Persisting Cliente:', { clienteId, nome, email });
+  await db.query(insertClienteQuery, [clienteId, nome, email, telefone ?? null]);
+
+  if (oldClienteId && oldClienteId !== clienteId) {
+    await db.query('UPDATE agendamentos SET cliente_id = $1 WHERE cliente_id = $2', [clienteId, oldClienteId]);
+  }
+
+  const finalClienteRes = await db.query('SELECT * FROM clientes WHERE email = $1', [email]);
+  return finalClienteRes.rows[0];
 }
 
 export async function ensureClienteExiste({ nome, email, telefone }: EnsureClienteInput): Promise<EnsureClienteResult> {
-  const existingCliente = await db
-    .select()
-    .from(clientes)
-    .where(eq(clientes.email, email))
-    .limit(1);
+  const existingClienteRes = await db.query('SELECT * FROM clientes WHERE email = $1', [email]);
+  const existingCliente = existingClienteRes.rows[0];
 
-  const existingUser = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const existingUserRes = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+  const existingUser = existingUserRes.rows[0];
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !supabaseAdmin) {
-    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY ausente. Utilizando fluxo de fallback apenas com banco de dados.');
-
-    const clienteId = existingCliente[0]?.id ?? existingUser[0]?.id ?? randomUUID();
-    const clienteRegistro = await persistClienteDados(clienteId, {
-      nome,
-      email,
-      telefone,
-      oldClienteId: existingCliente[0]?.id ?? existingUser[0]?.id ?? null,
-    });
-
-    return {
-      clienteId,
-      novoCliente: existingCliente.length === 0,
-      senhaGerada: null,
-      cliente: clienteRegistro,
-    };
-  }
-
-  const existingAuthUser = await getAuthUserByEmail(email);
-
-  let clienteId: string;
+  let clienteId: string = existingCliente?.id ?? existingUser?.id ?? randomUUID();
   let senhaGerada: string | null = null;
   let novoCliente = false;
 
-  if (existingAuthUser) {
-    clienteId = existingAuthUser.id;
+  if (existingUser) {
+    clienteId = existingUser.id;
   } else {
-    senhaGerada = Math.random().toString(36).slice(-10);
-
-    const { data: createdAuth, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: senhaGerada,
-      email_confirm: true,
-      user_metadata: {
-        nome,
-        userType: 'cliente',
-        telefone: telefone ?? null,
-      },
-    });
-
-    if (authError || !createdAuth?.user) {
-      console.error('❌ Erro ao criar usuário no Supabase Auth:', authError?.message);
-      throw new Error(`Erro ao criar usuário no Supabase Auth: ${authError?.message ?? 'desconhecido'}`);
-    }
-
-    clienteId = createdAuth.user.id;
     novoCliente = true;
-    console.log('✅ Usuário criado no Supabase Auth:', clienteId);
+    senhaGerada = Math.random().toString(36).slice(-10);
+    const hashedPassword = await hashPassword(senhaGerada);
+
+    await db.query(
+      `INSERT INTO users (id, email, nome, password_hash, user_type, telefone, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 'cliente', $5, NOW(), NOW())`,
+      [clienteId, email, nome, hashedPassword, telefone ?? null]
+    );
   }
 
   const clienteRegistro = await persistClienteDados(clienteId, {
     nome,
     email,
     telefone,
-    oldClienteId: existingCliente[0]?.id ?? existingUser[0]?.id ?? null,
+    oldClienteId: existingCliente?.id ?? null,
   });
 
   return {

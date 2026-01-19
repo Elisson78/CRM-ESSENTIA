@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { db } from '@/lib/db';
 
 // Endpoint administrativo para atualizar o userType de um usuário
 export async function POST(request: NextRequest) {
@@ -23,26 +20,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar cliente admin com service role
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    });
-
     // Buscar o usuário pelo email
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-
-    if (listError) {
-      console.error('Erro ao listar usuários:', listError);
-      return NextResponse.json(
-        { error: 'Erro ao buscar usuário' },
-        { status: 500 }
-      );
-    }
-
-    const user = users.find(u => u.email === email);
+    const userRes = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = userRes.rows[0];
 
     if (!user) {
       return NextResponse.json(
@@ -51,37 +31,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Atualizar user_metadata
-    const { data, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
-      {
-        user_metadata: {
-          ...user.user_metadata,
-          userType: userType
-        }
-      }
+    // Atualizar userType
+    const updateRes = await db.query(
+      'UPDATE users SET user_type = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [userType, user.id]
     );
-
-    if (updateError) {
-      console.error('Erro ao atualizar usuário:', updateError);
-      return NextResponse.json(
-        { error: 'Erro ao atualizar tipo de usuário' },
-        { status: 500 }
-      );
-    }
+    const updatedUser = updateRes.rows[0];
 
     console.log('✅ Usuário atualizado:', {
-      email: data.user.email,
-      userType: data.user.user_metadata?.userType
+      email: updatedUser.email,
+      userType: updatedUser.user_type
     });
 
     return NextResponse.json({
       success: true,
       message: 'Tipo de usuário atualizado com sucesso',
       user: {
-        id: data.user.id,
-        email: data.user.email,
-        userType: data.user.user_metadata?.userType
+        id: updatedUser.id,
+        email: updatedUser.email,
+        userType: updatedUser.user_type
       }
     });
 
@@ -93,4 +61,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

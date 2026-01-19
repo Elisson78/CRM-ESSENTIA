@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { POST as seedUsers } from "./users/route";
 import { POST as seedPasseios } from "./passeios/route";

@@ -1,14 +1,12 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { guias } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const ativos = await db
-      .select()
-      .from(guias)
-      .where(eq(guias.status, 'ativo'));
+    const ativos = await prisma.guia.findMany({
+      where: { status: 'ativo' }
+    });
 
     return NextResponse.json(ativos);
   } catch (error) {

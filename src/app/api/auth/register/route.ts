@@ -1,5 +1,7 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseClient } from "@/lib/database";
+import { prisma } from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,29 +18,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tipo de usuário inválido" }, { status: 400 });
     }
 
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password: senha,
-      options: {
-        data: {
-          nome,
-          userType: tipo,
-        },
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json({ error: "Email já cadastrado" }, { status: 400 });
+    }
+
+    const hashedPassword = await hashPassword(senha);
+
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: hashedPassword,
+        nome,
+        userType: tipo as any,
       },
     });
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    // Determine default redirect based on user type
+    let redirectUrl = "/";
+    if (tipo === 'admin') redirectUrl = "/admin";
+    else if (tipo === 'guia') redirectUrl = "/guia";
+    else redirectUrl = "/dashboard"; // Default for client
 
     return NextResponse.json({
       success: true,
       message: "Usuário criado com sucesso",
-      userId: data?.user?.id,
+      userId: newUser.id,
+      redirectUrl
     });
   } catch (error) {
     console.error("Erro no cadastro:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }
-

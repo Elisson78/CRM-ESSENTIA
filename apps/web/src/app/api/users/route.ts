@@ -1,133 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseAdmin, isUserAdmin } from "@/lib/supabase";
+import { db } from "@/lib/db";
+import { hashPassword } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 Iniciando busca de usuários...");
+    console.log("🔍 Iniciando busca de usuários (SQL)...");
 
-    // Verificar se o supabaseAdmin está configurado
-    if (!supabaseAdmin) {
-      console.error("❌ Service role não configurado");
-      return NextResponse.json({ error: "Service role não configurado. Verifique SUPABASE_SERVICE_ROLE_KEY no .env.local" }, { status: 500 });
-    }
+    const result = await db.query('SELECT * FROM users');
+    const allUsers = result.rows;
 
-    // Verificar autenticação via header Authorization
-    const authHeader = request.headers.get('authorization');
-    const cookieHeader = request.headers.get('cookie');
-    
-    console.log("🔑 Headers de autenticação:", { 
-      hasAuth: !!authHeader, 
-      hasCookie: !!cookieHeader,
-      cookiePreview: cookieHeader?.substring(0, 100) + '...'
-    });
+    console.log("✅ Usuários encontrados:", allUsers.length);
 
-    // Tentar obter sessão de diferentes formas
-    let session = null;
-    let sessionError = null;
+    const formattedUsers = allUsers.map((user) => {
+      // Map snake_case to camelCase
+      const nome = user.nome || "";
+      const [firstName, ...lastNameParts] = nome.split(" ");
 
-    // Método 1: Via header Authorization
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      try {
-        const { data, error } = await supabase.auth.getUser(token);
-        if (!error && data.user) {
-          session = { user: data.user };
-        }
-      } catch (e) {
-        console.log("Erro no método 1:", e);
-      }
-    }
-
-    // Método 2: Via getSession (funciona no servidor)
-    if (!session) {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        session = data.session;
-        sessionError = error;
-        console.log("🔍 Resultado getSession:", { 
-          hasSession: !!session, 
-          hasUser: !!session?.user,
-          error: error?.message 
-        });
-      } catch (e) {
-        console.log("Erro no método 2:", e);
-      }
-    }
-
-    // Método 3: Temporário - permitir acesso se não conseguir verificar sessão (para debug)
-    if (!session) {
-      console.log("⚠️ Não foi possível verificar sessão. Permitindo acesso temporariamente para debug.");
-      
-      // Buscar usuários diretamente para debug
-      const { data, error } = await supabaseAdmin.from("users").select("*");
-
-      if (error) {
-        console.error("❌ Erro Supabase ao listar usuários:", error.message);
-        return NextResponse.json({ error: `Erro no banco: ${error.message}` }, { status: 500 });
-      }
-
-      console.log("✅ Usuários encontrados:", data?.length || 0);
-
-      const formattedUsers = (data ?? []).map((user) => {
-        const [firstName, ...lastNameParts] = (user.nome || "").split(" ");
-        return {
-          id: user.id,
-          email: user.email,
-          firstName: firstName || "",
-          lastName: lastNameParts.join(" ") || "",
-          userType: user.user_type || user.userType,
-          telefone: user.telefone,
-          endereco: user.endereco,
-          cpf: user.cpf,
-          status: user.status ?? "ativo",
-          createdAt: user.created_at || user.createdAt || new Date().toISOString(),
-          updatedAt: user.updated_at || user.updatedAt || new Date().toISOString(),
-        };
-      });
-
-      return NextResponse.json(formattedUsers);
-    }
-
-    // Verificar se é admin
-    const isAdmin = await isUserAdmin(session.user.id);
-    console.log("👑 Verificação admin:", { userId: session.user.id, isAdmin });
-    
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Acesso negado. Apenas admins podem listar usuários." }, { status: 403 });
-    }
-
-    // Buscar usuários usando cliente admin
-    const { data, error } = await supabaseAdmin.from("users").select("*");
-
-    if (error) {
-      console.error("❌ Erro Supabase ao listar usuários:", error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    console.log("✅ Usuários encontrados:", data?.length || 0);
-
-    const formattedUsers = (data ?? []).map((user) => {
-      const [firstName, ...lastNameParts] = (user.nome || "").split(" ");
       return {
         id: user.id,
         email: user.email,
-        firstName: firstName || "",
-        lastName: lastNameParts.join(" ") || "",
-        userType: user.user_type || user.userType, // Aceitar ambos os nomes
+        firstName: user.first_name || firstName || "",
+        lastName: user.last_name || lastNameParts.join(" ") || "",
+        userType: user.user_type,
         telefone: user.telefone,
         endereco: user.endereco,
         cpf: user.cpf,
-        status: user.status ?? "ativo",
-        createdAt: user.created_at || user.createdAt || new Date().toISOString(),
-        updatedAt: user.updated_at || user.updatedAt || new Date().toISOString(),
+        status: "ativo",
+        // pg returns Date objects
+        createdAt: user.created_at ? new Date(user.created_at).toISOString() : new Date().toISOString(),
+        updatedAt: user.updated_at ? new Date(user.updated_at).toISOString() : new Date().toISOString(),
       };
     });
 
     return NextResponse.json(formattedUsers);
   } catch (error) {
     console.error("💥 Erro geral ao buscar usuários:", error);
-    return NextResponse.json({ 
-      error: "Erro interno do servidor", 
+    return NextResponse.json({
+      error: "Erro interno do servidor",
       details: error instanceof Error ? error.message : 'Erro desconhecido'
     }, { status: 500 });
   }
@@ -135,16 +44,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🚀 Iniciando criação de usuário...");
-
-    if (!supabaseAdmin) {
-      console.error("❌ Service role não configurado");
-      return NextResponse.json({ error: "Service role não configurado" }, { status: 500 });
-    }
-
-    // TEMPORÁRIO: Pular verificação de autenticação para permitir criação de usuários
-    // TODO: Implementar verificação robusta de autenticação depois
-    console.log("⚠️ Modo temporário: criação de usuário sem verificação de auth");
+    console.log("🚀 Iniciando criação de usuário (SQL)...");
 
     const body = await request.json();
     const { firstName, lastName, email, userType, password } = body;
@@ -160,93 +60,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tipo de usuário inválido" }, { status: 400 });
     }
 
-    console.log("🔍 Iniciando criação completa do usuário (Auth + Tabela)...");
-    
-    // 1. PRIMEIRO: Criar usuário no Supabase Auth para permitir login
-    console.log("📝 Criando usuário no Supabase Auth...");
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirmar email
-      user_metadata: {
-        firstName,
-        lastName,
-        userType
-      }
-    });
-
-    if (authError) {
-      console.error("❌ Erro ao criar usuário no Auth:", authError);
-      return NextResponse.json({ 
-        error: `Erro na autenticação: ${authError.message}`,
-        details: authError
-      }, { status: 400 });
-    }
-
-    if (!authUser.user) {
-      return NextResponse.json({ error: "Falha ao criar usuário no sistema de autenticação" }, { status: 500 });
-    }
-
-    console.log("✅ Usuário criado no Auth com ID:", authUser.user.id);
-
-    // 2. SEGUNDO: Criar registro na tabela users usando o mesmo ID
+    const hashedPassword = await hashPassword(password);
     const nome = `${firstName} ${lastName}`;
-    console.log("📝 Criando registro na tabela users...");
-    
-    const { data, error } = await supabaseAdmin
-      .from("users")
-      .insert({
-        id: authUser.user.id, // Usar o mesmo ID do Supabase Auth
-        email,
-        nome,
-        user_type: userType, // Usar user_type ao invés de userType
-        status: "ativo"
-      })
-      .select()
-      .maybeSingle();
 
-    if (error) {
-      console.error("❌ Erro ao inserir na tabela users:", error);
-      
-      // Se falhou na tabela, deletar do Auth para manter consistência
-      console.log("🧹 Removendo usuário do Auth devido ao erro na tabela...");
-      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
-      
-      return NextResponse.json({ 
-        error: `Erro ao criar perfil: ${error.message}`,
-        details: error
-      }, { status: 500 });
-    }
+    // Insert user
+    const insertQuery = `
+      INSERT INTO users (email, nome, password_hash, user_type, first_name, last_name)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, email, nome, user_type, first_name, last_name, created_at
+    `;
 
-    console.log("✅ Usuário criado com sucesso:", data);
+    const result = await db.query(insertQuery, [
+      email,
+      nome,
+      hashedPassword,
+      userType,
+      firstName,
+      lastName
+    ]);
+
+    const newUser = result.rows[0];
+
+    console.log("✅ Usuário criado com sucesso:", newUser.id);
 
     return NextResponse.json({
       success: true,
       user: {
-        id: data?.id,
-        email: data?.email,
-        firstName,
-        lastName,
-        userType,
-        nome: data?.nome,
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.first_name,
+        lastName: newUser.last_name,
+        userType: newUser.user_type,
+        nome: newUser.nome,
       },
     });
   } catch (error) {
     console.error("Erro ao criar usuário:", error);
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
+    return NextResponse.json({ error: "Erro interno do servidor: " + (error instanceof Error ? error.message : String(error)) }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    console.log("✏️ Iniciando atualização de usuário...");
-
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: "Service role não configurado" }, { status: 500 });
-    }
-
-    // TEMPORÁRIO: Pular verificação de autenticação
-    console.log("⚠️ Modo temporário: atualização de usuário sem verificação de auth");
+    console.log("✏️ Iniciando atualização de usuário (SQL)...");
 
     const { id, firstName, lastName, email, userType, password } = await request.json();
 
@@ -254,48 +110,68 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "ID do usuário é obrigatório" }, { status: 400 });
     }
 
-    console.log("🔄 Atualizando usuário...");
+    // Build dynamic update query
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
 
-    // 1. Atualizar no Supabase Auth se necessário
-    const authUpdates: any = {};
-    if (email) authUpdates.email = email;
-    if (password) authUpdates.password = password;
-    
-    if (Object.keys(authUpdates).length > 0) {
-      console.log("📝 Atualizando no Supabase Auth...");
-      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(id, authUpdates);
-      if (authError) {
-        console.error("❌ Erro ao atualizar usuário no Auth:", authError.message);
-        return NextResponse.json({ error: `Erro na autenticação: ${authError.message}` }, { status: 400 });
+    if (email) {
+      fields.push(`email = $${paramIndex++}`);
+      values.push(email);
+    }
+    if (userType) {
+      fields.push(`user_type = $${paramIndex++}`);
+      values.push(userType);
+    }
+    if (firstName || lastName) {
+      if (firstName) {
+        fields.push(`first_name = $${paramIndex++}`);
+        values.push(firstName);
       }
-      console.log("✅ Usuário atualizado no Auth");
+      if (lastName) {
+        fields.push(`last_name = $${paramIndex++}`);
+        values.push(lastName);
+      }
+      // Also update full name if components change
+      const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim();
+      if (fullName) {
+        fields.push(`nome = $${paramIndex++}`);
+        values.push(fullName);
+      }
     }
 
-    // 2. Atualizar na tabela users
-    const updates: Record<string, unknown> = {
-      email,
-      user_type: userType, // Usar user_type ao invés de userType
-      nome: `${firstName ?? ""} ${lastName ?? ""}`.trim(),
-      // Não incluir updatedAt se a coluna não existir
-    };
-
-    const { data, error } = await supabaseAdmin
-      .from("users")
-      .update(updates)
-      .eq("id", id)
-      .select()
-      .maybeSingle();
-
-    if (error) {
-      console.error("Erro Supabase ao atualizar usuário:", error.message);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (password) {
+      const hashed = await hashPassword(password);
+      fields.push(`password_hash = $${paramIndex++}`);
+      values.push(hashed);
     }
 
-    if (!data) {
+    fields.push(`updated_at = NOW()`);
+
+    if (fields.length === 0) {
+      return NextResponse.json({ message: "Nada a atualizar" });
+    }
+
+    values.push(id);
+    const query = `UPDATE users SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+
+    const result = await db.query(query, values);
+
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
 
-    return NextResponse.json(data);
+    const updatedUser = result.rows[0];
+
+    // Map back to expected format
+    return NextResponse.json({
+      id: updatedUser.id,
+      email: updatedUser.email,
+      nome: updatedUser.nome,
+      userType: updatedUser.user_type,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name
+    });
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
@@ -304,14 +180,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    console.log("🗑️ Iniciando exclusão de usuário...");
-
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: "Service role não configurado" }, { status: 500 });
-    }
-
-    // TEMPORÁRIO: Pular verificação de autenticação
-    console.log("⚠️ Modo temporário: exclusão de usuário sem verificação de auth");
+    console.log("🗑️ Iniciando exclusão de usuário (SQL)...");
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -320,29 +189,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID do usuário é obrigatório" }, { status: 400 });
     }
 
-    console.log("🗑️ Excluindo usuário completo (Auth + Tabela)...");
+    const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
 
-    // 1. Deletar da tabela users primeiro
-    console.log("📝 Removendo da tabela users...");
-    const { error: tableError } = await supabaseAdmin.from("users").delete().eq("id", id);
-
-    if (tableError) {
-      console.error("❌ Erro ao excluir usuário da tabela:", tableError.message);
-      return NextResponse.json({ error: `Erro ao remover perfil: ${tableError.message}` }, { status: 500 });
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
     }
+
     console.log("✅ Usuário removido da tabela");
-
-    // 2. Deletar do Supabase Auth
-    console.log("📝 Removendo do Supabase Auth...");
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
-    
-    if (authError) {
-      console.error("⚠️ Erro ao excluir usuário do Auth:", authError.message);
-      // Não falhar aqui, pois o usuário já foi removido da tabela
-      console.log("ℹ️ Usuário removido da tabela mas pode ainda existir no Auth");
-    } else {
-      console.log("✅ Usuário removido do Auth");
-    }
 
     return NextResponse.json({ success: true, message: "Usuário excluído com sucesso" });
   } catch (error) {

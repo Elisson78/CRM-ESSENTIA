@@ -7,7 +7,6 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  transpilePackages: ['@supabase/supabase-js', '@supabase/ssr'],
   images: {
     remotePatterns: [
       {
@@ -21,18 +20,6 @@ const nextConfig: NextConfig = {
         hostname: 'via.placeholder.com',
         port: '',
         pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        port: '',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'nvviwqoxeznxpzitpwua.supabase.co',
-        port: '',
-        pathname: '/storage/**',
       },
     ],
   },

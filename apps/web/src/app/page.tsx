@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import HeroSection from "@/components/hero-section";
@@ -12,9 +12,14 @@ import Footer from "@/components/footer";
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (loading || !user) return;
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted || loading || !user) return;
 
     const type = user.userType ?? 'admin';
 
@@ -24,10 +29,12 @@ export default function Home() {
       router.push('/guia');
     } else if (type === 'cliente') {
       router.push('/cliente');
-    } else {
-      router.push('/');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isMounted]);
+
+  if (!isMounted) {
+    return <div className="min-h-screen bg-slate-900" />;
+  }
 
   return (
     <main className="min-h-screen">

@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { 
-  ArrowLeft, 
-  CreditCard, 
-  Smartphone, 
-  Building2, 
+import {
+  ArrowLeft,
+  CreditCard,
+  Smartphone,
+  Building2,
   Shield,
   Check,
   Clock,
@@ -23,7 +23,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+
 
 interface BookingData {
   passeioId: string;
@@ -179,18 +179,23 @@ export default function Checkout() {
         if (ehNovoCliente && senhaParaLogin) {
           localStorage.setItem('senhaTemporaria', senhaParaLogin);
           try {
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-              email: bookingData.cliente.email,
-              password: senhaParaLogin,
+            const loginResponse = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: bookingData.cliente.email,
+                password: senhaParaLogin
+              })
             });
 
-            if (authError) {
-              console.error('❌ Erro ao autenticar no Supabase:', authError.message);
-            } else {
+            if (loginResponse.ok) {
+              const authData = await loginResponse.json();
               console.log('✅ Login automático realizado com sucesso!', authData.user?.id);
+            } else {
+              console.error('❌ Erro ao autenticar automaticamente');
             }
           } catch (authError) {
-            console.warn('❌ Não foi possível autenticar automaticamente no Supabase:', authError);
+            console.warn('❌ Não foi possível autenticar automaticamente:', authError);
           }
         } else {
           console.log('ℹ️ Login automático não necessário (cliente já existente)');
@@ -220,7 +225,7 @@ export default function Checkout() {
   }
 
   const valorComPix = paymentMethod === "pix" ? bookingData.valorTotal * 0.95 : bookingData.valorTotal;
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -258,8 +263,8 @@ export default function Checkout() {
                   {/* Método de pagamento */}
                   <div>
                     <Label className="text-base font-semibold">Escolha o método de pagamento</Label>
-                    <RadioGroup 
-                      value={paymentMethod} 
+                    <RadioGroup
+                      value={paymentMethod}
                       onValueChange={setPaymentMethod}
                       className="mt-3"
                     >
@@ -304,7 +309,7 @@ export default function Checkout() {
                             id="cardNumber"
                             placeholder="0000 0000 0000 0000"
                             value={paymentInfo.cardNumber}
-                            onChange={(e) => setPaymentInfo({...paymentInfo, cardNumber: e.target.value})}
+                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cardNumber: e.target.value })}
                             className="mt-1"
                           />
                         </div>
@@ -314,7 +319,7 @@ export default function Checkout() {
                             id="cardName"
                             placeholder="Nome como impresso no cartão"
                             value={paymentInfo.cardName}
-                            onChange={(e) => setPaymentInfo({...paymentInfo, cardName: e.target.value})}
+                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cardName: e.target.value })}
                             className="mt-1"
                           />
                         </div>
@@ -324,7 +329,7 @@ export default function Checkout() {
                             id="expiryDate"
                             placeholder="MM/AA"
                             value={paymentInfo.expiryDate}
-                            onChange={(e) => setPaymentInfo({...paymentInfo, expiryDate: e.target.value})}
+                            onChange={(e) => setPaymentInfo({ ...paymentInfo, expiryDate: e.target.value })}
                             className="mt-1"
                           />
                         </div>
@@ -334,7 +339,7 @@ export default function Checkout() {
                             id="cvv"
                             placeholder="000"
                             value={paymentInfo.cvv}
-                            onChange={(e) => setPaymentInfo({...paymentInfo, cvv: e.target.value})}
+                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cvv: e.target.value })}
                             className="mt-1"
                           />
                         </div>
@@ -344,7 +349,7 @@ export default function Checkout() {
                             id="cpf"
                             placeholder="000.000.000-00"
                             value={paymentInfo.cpf}
-                            onChange={(e) => setPaymentInfo({...paymentInfo, cpf: e.target.value})}
+                            onChange={(e) => setPaymentInfo({ ...paymentInfo, cpf: e.target.value })}
                             className="mt-1"
                           />
                         </div>
@@ -356,7 +361,7 @@ export default function Checkout() {
                     <div className="bg-green-50 p-4 rounded-lg border">
                       <h4 className="font-semibold text-green-800 mb-2">Pagamento via PIX</h4>
                       <p className="text-green-700 text-sm">
-                        Após confirmar, você receberá o QR Code para pagamento instantâneo. 
+                        Após confirmar, você receberá o QR Code para pagamento instantâneo.
                         Ganhe 5% de desconto adicional pagando via PIX!
                       </p>
                     </div>
@@ -366,7 +371,7 @@ export default function Checkout() {
                     <div className="bg-purple-50 p-4 rounded-lg border">
                       <h4 className="font-semibold text-purple-800 mb-2">Transferência Bancária</h4>
                       <p className="text-purple-700 text-sm">
-                        Você receberá por email os dados bancários para transferência. 
+                        Você receberá por email os dados bancários para transferência.
                         O prazo para confirmação é de até 2 dias úteis.
                       </p>
                     </div>
@@ -390,7 +395,7 @@ export default function Checkout() {
                 {/* Detalhes do passeio */}
                 <div className="space-y-3">
                   <h3 className="font-semibold">{bookingData.passeioNome}</h3>
-                  
+
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />

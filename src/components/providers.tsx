@@ -1,10 +1,7 @@
-
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "./theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { useState } from "react";
 import { Toaster } from "./ui/sonner";
 
 export default function Providers({
@@ -12,29 +9,17 @@ export default function Providers({
 }: {
   children: React.ReactNode
 }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: false,
-      },
-    },
-  }));
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-        suppressHydrationWarning
-      >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-        <Toaster richColors />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ThemeProvider
+      attribute="class"
+      forcedTheme="light"
+      enableSystem={false}
+      disableTransitionOnChange
+    >
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+      <Toaster richColors />
+    </ThemeProvider>
   );
 }

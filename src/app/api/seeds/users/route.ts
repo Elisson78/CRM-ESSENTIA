@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 // Rota de seed movida para apps/server/src/db/seed.ts

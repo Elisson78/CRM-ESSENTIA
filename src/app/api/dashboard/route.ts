@@ -1,58 +1,41 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { supabaseClient } from "@/lib/database";
-
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const today = new Date();
-    const todayKey = today.toISOString().split("T")[0];
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
+    const todayKey = today.toISOString().split("T")[0]; // YYYY-MM-DD
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const [usersRes, passeiosRes, agendamentosRes, transacoesRes] = await Promise.all([
-      supabaseClient.from("users").select("user_type"),
-      supabaseClient.from("passeios").select("id"),
-      supabaseClient
-        .from("agendamentos")
-        .select("status, data_passeio")
-        .gte('data_passeio', `${currentYear}-01-01`)
-        .lte('data_passeio', `${currentYear}-12-31`),
-      supabaseClient
-        .from("transacoes")
-        .select("valor, tipo, status, criado_em")
-        .eq("tipo", "receita")
-        .gte('criado_em', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`),
+    const [allUsers, totalPasseios, allAgendamentos] = await Promise.all([
+      prisma.user.findMany({ select: { userType: true } }),
+      prisma.passeio.count(),
+      prisma.agendamento.findMany()
     ]);
 
-    if (usersRes.error) throw usersRes.error;
-    if (passeiosRes.error) throw passeiosRes.error;
-    if (agendamentosRes.error) throw agendamentosRes.error;
-    if (transacoesRes.error) throw transacoesRes.error;
+    const totalClientes = allUsers.filter((u) => u.userType === "cliente").length;
+    const totalGuias = allUsers.filter((u) => u.userType === "guia").length;
+    const totalAdmins = allUsers.filter((u) => u.userType === "admin").length;
 
-    const users = usersRes.data ?? [];
-    const passeios = passeiosRes.data ?? [];
-    const agendamentos = agendamentosRes.data ?? [];
-    const transacoes = transacoesRes.data ?? [];
+    const agendamentosHoje = allAgendamentos.filter((a) => a.dataPasseio === todayKey).length;
 
-    const totalClientes = users.filter((user) => user.user_type === "cliente").length;
-    const totalGuias = users.filter((user) => user.user_type === "guia").length;
-    const totalAdmins = users.filter((user) => user.user_type === "admin").length;
-
-    const totalPasseios = passeios.length;
-
-    const agendamentosHoje = agendamentos.filter((agendamento) => {
-      return agendamento.data_passeio === todayKey;
+    // Filter agendamentos for current month
+    const agendamentosMes = allAgendamentos.filter((a) => {
+      const d = new Date(a.dataPasseio);
+      return d >= currentMonthStart && d <= currentMonthEnd;
     }).length;
 
-    const agendamentosMes = agendamentos.filter((agendamento) => {
-      const date = agendamento.data_passeio;
-      if (!date) return false;
-      return date.startsWith(`${currentYear}-${currentMonth.toString().padStart(2, '0')}`);
-    }).length;
+    const agendamentosPendentes = allAgendamentos.filter((a) => a.status === "pendente_cliente" || a.status === "pendente").length;
 
-    const agendamentosPendentes = agendamentos.filter((agendamento) => agendamento.status === "pendente_cliente").length;
-
-    const receitaMes = transacoes.reduce((total, transacao) => total + (transacao.valor ?? 0), 0);
+    // Approximating revenue from agendamentos (completed ones) for current month
+    const receitaMes = allAgendamentos
+      .filter((a) => {
+        const d = new Date(a.dataPasseio);
+        return d >= currentMonthStart && d <= currentMonthEnd && (a.status === 'concluido' || a.status === 'confirmado');
+      })
+      .reduce((sum, a) => sum + (a.valorTotal || 0), 0);
 
     return NextResponse.json(
       {
