@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { verifyPassword, createSession } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -14,19 +14,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Find user by email using direct SQL query
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
 
-    if (!user || !user.passwordHash) {
+    if (!user || !user.password_hash) {
       return NextResponse.json(
         { error: "Credenciais inválidas" },
         { status: 401 }
       );
     }
 
-    const isValid = await verifyPassword(password, user.passwordHash);
+    const isValid = await verifyPassword(password, user.password_hash);
 
     if (!isValid) {
       return NextResponse.json(
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
       id: user.id,
       email: user.email,
       nome: user.nome,
-      userType: user.userType,
+      userType: user.user_type, // Direct DB uses snake_case, mapping to camelCase for session
     };
 
     await createSession(sessionPayload);

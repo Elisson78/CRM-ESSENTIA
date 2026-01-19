@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { ensureClienteExiste } from '@/lib/customer-service';
 
@@ -37,9 +37,8 @@ export async function POST(request: Request) {
       clienteRegistro = resultado.cliente;
     }
 
-    const passeio = await prisma.passeio.findUnique({
-      where: { id: data.passeioId }
-    });
+    const passeioRes = await db.query('SELECT * FROM passeios WHERE id = $1', [data.passeioId]);
+    const passeio = passeioRes.rows[0];
 
     if (!passeio) {
       return NextResponse.json({ error: 'Passeio não encontrado' }, { status: 404 });
@@ -49,26 +48,49 @@ export async function POST(request: Request) {
     const percentualComissao = 30;
     const valorComissao = data.valorTotal * (percentualComissao / 100);
 
-    const agendamento = await prisma.agendamento.create({
-      data: {
-        id: agendamentoId,
-        passeioId: data.passeioId,
-        clienteId,
-        dataPasseio: new Date(data.data).toISOString().split('T')[0],
-        numeroPessoas: data.pessoas,
-        valorTotal: data.valorTotal,
-        valorComissao,
-        percentualComissao,
-        status: 'confirmada',
-        observacoes: data.clienteObservacoes || null,
-      }
-    });
+    const insertQuery = `
+      INSERT INTO agendamentos (
+        id, passeio_id, cliente_id, data_passeio, numero_pessoas, 
+        valor_total, valor_comissao, percentual_comissao, status, observacoes, criado_em, atualizado_em
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmada', $9, NOW(), NOW())
+      RETURNING *
+    `;
+
+    const insertRes = await db.query(insertQuery, [
+      agendamentoId,
+      data.passeioId,
+      clienteId,
+      new Date(data.data).toISOString().split('T')[0],
+      data.pessoas,
+      data.valorTotal,
+      valorComissao,
+      percentualComissao,
+      data.clienteObservacoes || null
+    ]);
+
+    const agendamento = insertRes.rows[0];
+
+    // Mapear retorno para camelCase se necessário pelo frontend, 
+    // mas o original retornava o objeto prisma direto.
+    // O frontend provavelmente espera camelCase.
+    const agendamentoCamels = {
+      id: agendamento.id,
+      passeioId: agendamento.passeio_id,
+      clienteId: agendamento.cliente_id,
+      dataPasseio: agendamento.data_passeio,
+      numeroPessoas: agendamento.numero_pessoas,
+      valorTotal: parseFloat(agendamento.valor_total),
+      valorComissao: parseFloat(agendamento.valor_comissao),
+      percentualComissao: agendamento.percentual_comissao,
+      status: agendamento.status,
+      observacoes: agendamento.observacoes
+    };
 
     return NextResponse.json({
       success: true,
       clienteId,
       agendamentoId,
-      agendamento: agendamento,
+      agendamento: agendamentoCamels,
       senhaGerada,
       novoCliente,
       cliente: clienteRegistro,
@@ -82,11 +104,8 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    // Return agendamentos with status 'confirmada' as a fallback since 'reservas' table is missing
-    const confirmados = await prisma.agendamento.findMany({
-      where: { status: 'confirmada' }
-    });
-    return NextResponse.json(confirmados);
+    const result = await db.query("SELECT * FROM agendamentos WHERE status = 'confirmada'");
+    return NextResponse.json(result.rows);
   } catch (error) {
     console.error('Erro ao buscar reservas:', error);
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });

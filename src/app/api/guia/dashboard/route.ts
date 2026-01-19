@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🎯 Iniciando busca de dados do dashboard do guia...");
+    console.log("🎯 Iniciando busca de dados do dashboard do guia via SQL...");
 
     const { searchParams } = new URL(request.url);
     const guiaId = searchParams.get("guiaId");
@@ -16,56 +16,56 @@ export async function GET(request: NextRequest) {
     console.log("👤 Buscando dados para guia:", guiaId);
 
     // 1. Buscar dados do guia na tabela users primeiro
-    const usuario = await prisma.user.findUnique({
-      where: { id: guiaId },
-    });
+    const userRes = await db.query('SELECT * FROM users WHERE id = $1', [guiaId]);
+    const usuario = userRes.rows[0];
 
     if (!usuario) {
       return NextResponse.json({ error: "Guia não encontrado" }, { status: 404 });
     }
 
-    if (usuario.userType !== 'guia') {
+    if (usuario.user_type !== 'guia') {
       return NextResponse.json({ error: "Usuário não é um guia" }, { status: 404 });
     }
 
     // 2. Tentar buscar dados extras na tabela guias (se existir)
-    const guiaExtra = await prisma.guia.findUnique({
-      where: { id: guiaId },
-    });
+    const guiaExtraRes = await db.query('SELECT * FROM guias WHERE id = $1', [guiaId]);
+    const guiaExtra = guiaExtraRes.rows[0];
 
     // Combinar dados do usuário com dados extras do guia (se houver)
+    // Note: DB columns are snake_case. Mapping to API camelCase expectation.
     const guia = {
       id: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
-      avaliacaoMedia: guiaExtra?.avaliacaoMedia || 4.5, // Valor padrão
-      totalAvaliacoes: guiaExtra?.totalAvaliacoes || 0,
-      comissaoTotal: guiaExtra?.comissaoTotal || 0,
-      percentualComissao: guiaExtra?.percentualComissao || 30
+      avaliacaoMedia: guiaExtra?.avaliacao_media || 4.5,
+      totalAvaliacoes: guiaExtra?.total_avaliacoes || 0,
+      comissaoTotal: guiaExtra?.comissao_total || 0,
+      percentualComissao: guiaExtra?.percentual_comissao || 30
     };
 
-    // 3. Buscar agendamentos do guia com joins manuais (Prisma style)
-    const agendamentosList = await prisma.agendamento.findMany({
-      where: { guiaId },
-    });
+    // 3. Buscar agendamentos do guia com joins manuais (SQL style)
+    const agendamentosQuery = `
+        SELECT 
+            a.id,
+            a.data_passeio,
+            a.horario_inicio,
+            a.horario_fim,
+            a.numero_pessoas,
+            a.valor_total,
+            a.valor_comissao,
+            a.status,
+            a.observacoes,
+            p.nome as passeio_nome,
+            c.nome as cliente_nome,
+            c.telefone as cliente_telefone
+        FROM agendamentos a
+        LEFT JOIN passeios p ON a.passeio_id = p.id
+        LEFT JOIN clientes c ON a.cliente_id = c.id
+        WHERE a.guia_id = $1
+    `;
 
-    // Since we don't have relations defined in Prisma schema yet to keep it simple, 
-    // we'll fetch related data if needed or just use what we have.
-    // The previous code used leftJoin. Let's simulate that logic.
-
-    const agendamentosComDetalhes = await Promise.all(agendamentosList.map(async (agendamento) => {
-      const [passeio, cliente] = await Promise.all([
-        prisma.passeio.findUnique({ where: { id: agendamento.passeioId } }),
-        agendamento.clienteId ? prisma.cliente.findUnique({ where: { id: agendamento.clienteId } }) : null
-      ]);
-
-      return {
-        ...agendamento,
-        passeioNome: passeio?.nome,
-        clienteNome: cliente?.nome,
-        clienteTelefone: cliente?.telefone
-      };
-    }));
+    const agendamentosRes = await db.query(agendamentosQuery, [guiaId]);
+    const agendamentosComDetalhes = agendamentosRes.rows;
 
     console.log("📊 Resultado busca agendamentos:", agendamentosComDetalhes.length);
 
@@ -75,14 +75,17 @@ export async function GET(request: NextRequest) {
     const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
 
     const agendamentosMes = agendamentosComDetalhes.filter(a => {
-      const dataPasseio = new Date(a.dataPasseio);
+      // Check for valid date
+      if (!a.data_passeio) return false;
+      const dataPasseio = new Date(a.data_passeio);
       return dataPasseio >= inicioMes && dataPasseio <= fimMes;
     });
 
     const agendamentosConcluidos = agendamentosComDetalhes.filter(a => a.status === 'concluido' || a.status === 'concluidas');
+
     const receitaMes = agendamentosMes
       .filter(a => a.status === 'concluido' || a.status === 'concluidas')
-      .reduce((total, a) => total + (a.valorComissao || 0), 0);
+      .reduce((total, a) => total + (parseFloat(a.valor_comissao) || 0), 0);
 
     // 4. Organizar agendamentos por status
     const agendamentosPorStatus = {
@@ -96,15 +99,15 @@ export async function GET(request: NextRequest) {
     // 5. Formatar dados para o frontend
     const formatarAgendamento = (agendamento: any) => ({
       id: agendamento.id,
-      passeio_nome: agendamento.passeioNome || "Passeio não informado",
-      cliente_nome: agendamento.clienteNome || "Cliente não informado",
-      cliente_telefone: agendamento.clienteTelefone || "",
-      data_passeio: agendamento.dataPasseio,
-      horario_inicio: agendamento.horarioInicio || "08:00",
-      horario_fim: agendamento.horarioFim || "18:00",
-      numero_pessoas: agendamento.numeroPessoas || 1,
-      valor_total: agendamento.valorTotal || 0,
-      valor_comissao: agendamento.valorComissao || 0,
+      passeio_nome: agendamento.passeio_nome || "Passeio não informado",
+      cliente_nome: agendamento.cliente_nome || "Cliente não informado",
+      cliente_telefone: agendamento.cliente_telefone || "",
+      data_passeio: agendamento.data_passeio,
+      horario_inicio: agendamento.horario_inicio || "08:00",
+      horario_fim: agendamento.horario_fim || "18:00",
+      numero_pessoas: agendamento.numero_pessoas || 1,
+      valor_total: agendamento.valor_total || 0,
+      valor_comissao: agendamento.valor_comissao || 0,
       status: agendamento.status,
       observacoes: agendamento.observacoes
     });
@@ -131,7 +134,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(dashboardData);
 
   } catch (error) {
-    console.error("💥 Erro geral ao carregar dashboard do guia:", error);
+    console.error("💥 Erro geral ao carregar dashboard do guia (SQL):", error);
     return NextResponse.json({
       error: "Erro interno do servidor",
       details: error instanceof Error ? error.message : 'Erro desconhecido'

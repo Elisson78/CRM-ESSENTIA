@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -9,33 +9,55 @@ export async function GET() {
     const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-    const [allUsers, totalPasseios, allAgendamentos] = await Promise.all([
-      prisma.user.findMany({ select: { userType: true } }),
-      prisma.passeio.count(),
-      prisma.agendamento.findMany()
+    // Parallelize queries for performance
+    const [usersResult, passeiosCountResult, agendamentosResult] = await Promise.all([
+      db.query('SELECT user_type FROM users'),
+      db.query('SELECT COUNT(*) FROM passeios'),
+      db.query('SELECT * FROM agendamentos')
     ]);
 
-    const totalClientes = allUsers.filter((u) => u.userType === "cliente").length;
-    const totalGuias = allUsers.filter((u) => u.userType === "guia").length;
-    const totalAdmins = allUsers.filter((u) => u.userType === "admin").length;
+    const allUsers = usersResult.rows;
+    // count returns a string in pg
+    const totalPasseios = parseInt(passeiosCountResult.rows[0].count, 10);
+    const allAgendamentos = agendamentosResult.rows;
 
-    const agendamentosHoje = allAgendamentos.filter((a) => a.dataPasseio === todayKey).length;
+    // Filter users
+    const totalClientes = allUsers.filter((u) => u.user_type === "cliente").length;
+    const totalGuias = allUsers.filter((u) => u.user_type === "guia").length;
+    const totalAdmins = allUsers.filter((u) => u.user_type === "admin").length;
+
+    // Mapping Agendamentos DB columns to logic
+    // DB: data_passeio, status, valor_total
+
+    // Using data_passeio as confirmed in schema.
+
+    const agendamentosHoje = allAgendamentos.filter((a) => {
+      // Handle potential naming variations just in case
+      const dateStr = a.data_passeio || '';
+      return dateStr === todayKey;
+    }).length;
 
     // Filter agendamentos for current month
     const agendamentosMes = allAgendamentos.filter((a) => {
-      const d = new Date(a.dataPasseio);
+      const dateStr = a.data_passeio || '';
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
       return d >= currentMonthStart && d <= currentMonthEnd;
     }).length;
 
-    const agendamentosPendentes = allAgendamentos.filter((a) => a.status === "pendente_cliente" || a.status === "pendente").length;
+    const agendamentosPendentes = allAgendamentos.filter((a) =>
+      (a.status === "pendente_cliente" || a.status === "pendente")
+    ).length;
 
-    // Approximating revenue from agendamentos (completed ones) for current month
+    // Revenue
     const receitaMes = allAgendamentos
       .filter((a) => {
-        const d = new Date(a.dataPasseio);
+        const dateStr = a.data_passeio || '';
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
         return d >= currentMonthStart && d <= currentMonthEnd && (a.status === 'concluido' || a.status === 'confirmado');
       })
-      .reduce((sum, a) => sum + (a.valorTotal || 0), 0);
+      .reduce((sum, a) => sum + (parseFloat(a.valor_total || '0') || 0), 0);
 
     return NextResponse.json(
       {
@@ -51,8 +73,9 @@ export async function GET() {
       { status: 200 },
     );
   } catch (error) {
-    console.error("Erro ao buscar estatísticas do dashboard:", error);
+    console.error("Erro ao buscar estatísticas do dashboard (SQL):", error);
 
+    // Return zero'd object on error to avoid 500 on frontend
     return NextResponse.json(
       {
         totalClientes: 0,

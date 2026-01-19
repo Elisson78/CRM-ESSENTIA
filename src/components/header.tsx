@@ -103,7 +103,7 @@ export default function Header() {
           ) : (
             <div className="hidden md:flex items-center gap-2">
               <Link href="/login">
-                <Button variant="outline" size="sm">Entrar</Button>
+                <Button variant="outline" size="sm" className="bg-white text-gray-900 border-gray-200 hover:bg-gray-50">Entrar</Button>
               </Link>
               <Link href="/register">
                 <Button size="sm">Cadastrar</Button>

@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
 
 // Endpoint administrativo para atualizar o userType de um usuário
 export async function POST(request: NextRequest) {
@@ -22,9 +22,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar o usuário pelo email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const userRes = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = userRes.rows[0];
 
     if (!user) {
       return NextResponse.json(
@@ -34,17 +33,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar userType
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        userType: userType as any,
-        updatedAt: new Date()
-      }
-    });
+    const updateRes = await db.query(
+      'UPDATE users SET user_type = $1, updated_at = NOW() WHERE id = $2 RETURNING *',
+      [userType, user.id]
+    );
+    const updatedUser = updateRes.rows[0];
 
     console.log('✅ Usuário atualizado:', {
       email: updatedUser.email,
-      userType: updatedUser.userType
+      userType: updatedUser.user_type
     });
 
     return NextResponse.json({
@@ -53,7 +50,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
-        userType: updatedUser.userType
+        userType: updatedUser.user_type
       }
     });
 

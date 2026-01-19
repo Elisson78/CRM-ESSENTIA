@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
 
 export async function PUT(request: Request) {
   try {
@@ -10,17 +10,22 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Cliente ID obrigatório' }, { status: 400 });
     }
 
-    // Atualizar dados do cliente
-    const updatedCliente = await prisma.cliente.update({
-      where: { id: String(clienteId) },
-      data: {
-        nome: nome || undefined,
-        telefone: telefone || undefined,
-        cpf: cpf || undefined,
-        endereco: endereco ? JSON.stringify({ endereco }) : undefined,
-        atualizadoEm: new Date()
-      }
-    });
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (nome) { fields.push(`nome = $${paramIndex++}`); values.push(nome); }
+    if (telefone) { fields.push(`telefone = $${paramIndex++}`); values.push(telefone); }
+    if (cpf) { fields.push(`cpf = $${paramIndex++}`); values.push(cpf); }
+    if (endereco) { fields.push(`endereco = $${paramIndex++}`); values.push(JSON.stringify({ endereco })); }
+
+    fields.push(`atualizado_em = NOW()`);
+    values.push(String(clienteId));
+
+    const query = `UPDATE clientes SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+
+    const result = await db.query(query, values);
+    const updatedCliente = result.rows[0];
 
     return NextResponse.json({
       success: true,
@@ -42,9 +47,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Cliente ID obrigatório' }, { status: 400 });
     }
 
-    const cliente = await prisma.cliente.findUnique({
-      where: { id: String(clienteId) }
-    });
+    const result = await db.query('SELECT * FROM clientes WHERE id = $1', [clienteId]);
+    const cliente = result.rows[0];
 
     if (!cliente) {
       return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });

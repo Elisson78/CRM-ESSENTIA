@@ -1,14 +1,22 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 const ensureArray = (value: unknown): string[] => {
   if (!value && value !== 0) return [];
-  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string').map(i => i.trim()).filter(Boolean);
+  // Handle already parsed arrays (pg driver behavior for jsonb)
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').map(i => i.trim()).filter(Boolean);
+  }
+  // Handle stringified JSON
   if (typeof value === 'string') {
     try {
       const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return parsed.filter((item): item is string => typeof item === 'string').map(i => i.trim()).filter(Boolean);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string').map(i => i.trim()).filter(Boolean);
+      }
       return [value.trim()].filter(Boolean);
     } catch {
       return [value.trim()].filter(Boolean);
@@ -19,15 +27,27 @@ const ensureArray = (value: unknown): string[] => {
 
 export async function GET() {
   try {
-    console.log('🔄 Buscando passeios no banco de dados via Prisma...');
-    const todosPasseios = await prisma.passeio.findMany();
+    console.log('🔄 Buscando passeios no banco de dados via SQL...');
+    const result = await db.query('SELECT * FROM passeios');
+    const todosPasseios = result.rows;
     console.log(`✅ ${todosPasseios.length} passeios encontrados no banco`);
 
     const passeiosFormatados = todosPasseios.map((p) => ({
-      ...p,
+      id: p.id,
+      nome: p.nome,
+      descricao: p.descricao,
+      preco: p.preco,
+      duracao: p.duracao,
+      categoria: p.categoria,
+      // Handle potential JSONB columns
       imagens: ensureArray(p.imagens),
+      images: ensureArray(p.imagens), // Alias for Admin compatibility
       inclusoes: ensureArray(p.inclusoes),
       idiomas: ensureArray(p.idiomas),
+      capacidadeMaxima: p.capacidade_maxima, // pg returns snake_case
+      ativo: p.ativo,
+      criadoEm: p.criado_em,
+      atualizadoEm: p.atualizado_em
     }));
 
     return NextResponse.json(passeiosFormatados);
@@ -40,31 +60,54 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const passeioData = await request.json();
+    console.log('📦 Recebendo dados para criar passeio:', JSON.stringify(passeioData, null, 2));
+
     const novoPasseioId = `passeio_${Date.now()}`;
 
-    const novoPasseio = await prisma.passeio.create({
-      data: {
-        id: novoPasseioId,
-        nome: passeioData.name || passeioData.nome || "Passeio sem nome",
-        descricao: passeioData.description || passeioData.descricao || "Descrição não informada",
-        preco: parseFloat(passeioData.price || passeioData.preco) || 0,
-        duracao: passeioData.duration ? `${passeioData.duration}h` : (passeioData.duracao || "Desconhecida"),
-        categoria: passeioData.type || passeioData.categoria || "Geral",
-        imagens: passeioData.images || [],
-        inclusoes: passeioData.includedItems || [],
-        idiomas: passeioData.languages || [],
-        capacidadeMaxima: parseInt(passeioData.maxPeople) || 20,
-        ativo: 1
-      }
+    // Construct values
+    const nome = passeioData.name || passeioData.nome || "Passeio sem nome";
+    const descricao = passeioData.description || passeioData.descricao || "Descrição não informada";
+    const preco = parseFloat(passeioData.price || passeioData.preco) || 0;
+    const duracao = passeioData.duration ? `${passeioData.duration}h` : (passeioData.duracao || "Desconhecida");
+    const categoria = passeioData.type || passeioData.categoria || "Geral";
+    const imagens = JSON.stringify(passeioData.images || []);
+    const inclusoes = JSON.stringify(passeioData.includedItems || []);
+    const idiomas = JSON.stringify(passeioData.languages || []);
+    const capacidadeMaxima = parseInt(passeioData.maxPeople) || 20;
+
+    console.log('📝 Tentando inserir no banco:', {
+      id: novoPasseioId, nome, preco, categoria, capacidadeMaxima
     });
+
+    const insertQuery = `
+      INSERT INTO passeios 
+      (id, nome, descricao, preco, duracao, categoria, imagens, inclusoes, idiomas, capacidade_maxima, ativo, criado_em, atualizado_em)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      RETURNING *
+    `;
+
+    const result = await db.query(insertQuery, [
+      novoPasseioId, nome, descricao, preco, duracao, categoria, imagens, inclusoes, idiomas, capacidadeMaxima, 1
+    ]);
+
+    console.log('✅ Inserção com sucesso. Rows:', result.rowCount);
+
+    const novoPasseio = result.rows[0];
 
     return NextResponse.json({
       id: novoPasseio.id,
       message: 'Passeio criado com sucesso',
-      passeio: novoPasseio
+      passeio: {
+        ...novoPasseio,
+        capacidadeMaxima: novoPasseio.capacidade_maxima,
+        criadoEm: novoPasseio.criado_em,
+        atualizadoEm: novoPasseio.atualizado_em
+      }
     });
   } catch (error) {
-    console.error('Erro ao criar passeio:', error);
-    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+    console.error('❌ Erro CRÍTICO ao criar passeio:', error);
+    // @ts-ignore
+    console.error('Detalhes do erro:', error.message, error.stack);
+    return NextResponse.json({ error: 'Erro interno do servidor', details: String(error) }, { status: 500 });
   }
 }

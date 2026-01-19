@@ -1,17 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, UserPlus, MapPin, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, UserPlus, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
   const { signup } = useAuth();
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -34,222 +38,214 @@ export default function RegisterPage() {
     if (error) setError("");
   };
 
-  const validateForm = () => {
-    if (!formData.firstName.trim()) {
-      setError("Nome é obrigatório");
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      setError("Sobrenome é obrigatório");
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError("Email é obrigatório");
-      return false;
-    }
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setError("Email inválido");
-      return false;
-    }
-    if (!formData.password) {
-      setError("Senha é obrigatória");
-      return false;
-    }
-    if (formData.password.length < 6) {
-      setError("Senha deve ter pelo menos 6 caracteres");
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Senhas não coincidem");
-      return false;
-    }
-    return true;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
     setIsLoading(true);
     setError("");
+    setSuccess("");
 
-    const { error: signupError } = await signup({
-      email: formData.email,
-      password: formData.password,
-      nome: `${formData.firstName} ${formData.lastName}`.trim(),
-      userType: "cliente",
-    });
-
-    if (signupError) {
-      setError(signupError);
+    // Basic Validation
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+      setError("Todos os campos são obrigatórios.");
       setIsLoading(false);
       return;
     }
 
-    setSuccess("Conta criada com sucesso! Verifique seu email para confirmar a conta.");
-    setIsLoading(false);
-    setTimeout(() => {
-      window.location.href = "/login";
-    }, 2000);
+    if (formData.password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("As senhas não coincidem.");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error: signupError } = await signup({
+        email: formData.email,
+        password: formData.password,
+        nome: `${formData.firstName} ${formData.lastName}`.trim(),
+        userType: "cliente",
+      });
+
+      if (signupError) {
+        setError(signupError);
+        setIsLoading(false);
+        return;
+      }
+
+      setSuccess("Conta criada com sucesso! Redirecionando...");
+
+      // Delay redirect slightly for user to see success message
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+
+    } catch (err) {
+      console.error("Signup error:", err);
+      setError("Erro ao criar conta. Tente novamente.");
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-500 to-orange-400 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 w-full max-w-md"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-md"
       >
-        <Card className="border-0 shadow-2xl">
-          <CardHeader className="text-center pb-6">
-            <div className="flex justify-center mb-4">
-              <div className="p-3 bg-blue-600 rounded-full">
-                <MapPin className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">Criar Conta</CardTitle>
-            <p className="text-gray-600 mt-2">Junte-se ao TourGuide e descubra a Itália</p>
+        <Card className="border shadow-lg bg-white">
+          <CardHeader className="space-y-1 text-center pb-6 border-b bg-gray-50/50">
+            <h1 className="text-3xl font-bold tracking-tight text-blue-900">ESSENTIA</h1>
+            <CardTitle className="text-xl text-gray-800">Crie sua conta</CardTitle>
+            <CardDescription>
+              Preencha os dados abaixo para se cadastrar
+            </CardDescription>
           </CardHeader>
-
-          <CardContent className="space-y-6">
+          <CardContent className="pt-6 space-y-6">
             {error && (
-              <Alert className="border-red-200 bg-red-50">
-                <AlertDescription className="text-red-700">{error}</AlertDescription>
+              <Alert variant="destructive" className="bg-red-50 text-red-900 border-red-200">
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
             {success && (
-              <Alert className="border-green-200 bg-green-50">
-                <AlertDescription className="text-green-700">{success}</AlertDescription>
+              <Alert className="bg-green-50 text-green-900 border-green-200">
+                <AlertDescription>{success}</AlertDescription>
               </Alert>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="firstName">Nome</Label>
                   <Input
                     id="firstName"
                     name="firstName"
-                    type="text"
+                    placeholder="Nome"
+                    className="bg-gray-50"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    placeholder="Seu nome"
                     disabled={isLoading}
                     required
                   />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="lastName">Sobrenome</Label>
                   <Input
                     id="lastName"
                     name="lastName"
-                    type="text"
+                    placeholder="Sobrenome"
+                    className="bg-gray-50"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    placeholder="Seu sobrenome"
                     disabled={isLoading}
                     required
                   />
                 </div>
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
+                  placeholder="exemplo@email.com"
+                  className="bg-gray-50"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="seu@email.com"
                   disabled={isLoading}
                   required
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="bg-gray-50 pr-10"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Sua senha"
                     disabled={isLoading}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar senha</Label>
                 <div className="relative">
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="bg-gray-50 pr-10"
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    placeholder="Confirme sua senha"
                     disabled={isLoading}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white" disabled={isLoading}>
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all mt-2"
+                disabled={isLoading}
+              >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     Criando conta...
-                  </div>
+                  </span>
                 ) : (
-                  <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     <UserPlus className="h-4 w-4" />
-                    Criar Conta
-                  </div>
+                    Cadastrar
+                  </span>
                 )}
               </Button>
             </form>
 
-            <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Já tem uma conta?{" "}
-                <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                  Fazer login
-                </a>
-              </p>
-            </div>
-
-            <div className="text-center">
-              <a
+            <div className="flex flex-col gap-4 text-center text-sm">
+              <Link
+                href="/login"
+                className="text-muted-foreground hover:text-blue-600 transition-colors"
+              >
+                Já tem uma conta? <span className="font-medium text-blue-600">Fazer login</span>
+              </Link>
+              <Link
                 href="/"
-                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                className="flex items-center justify-center gap-2 text-muted-foreground hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Voltar ao início
-              </a>
+                Voltar para o início
+              </Link>
             </div>
           </CardContent>
         </Card>
@@ -257,4 +253,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

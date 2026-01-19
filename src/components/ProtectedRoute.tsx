@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDashboardRoute, type UserType } from "@/lib/auth-redirect";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,39 +20,45 @@ export default function ProtectedRoute({
   const pathname = usePathname();
 
   useEffect(() => {
+    console.log('🔒 ProtectedRoute - verificando acesso:', {
+      loading,
+      user: user?.email,
+      userType: user?.userType,
+      allowedTypes,
+      pathname
+    });
+
     if (loading) return;
 
-    console.log("🔒 [ProtectedRoute] Verificando acesso");
-    console.log("🔒 [ProtectedRoute] User:", user);
-    console.log("🔒 [ProtectedRoute] UserType:", user?.userType);
-    console.log("🔒 [ProtectedRoute] Allowed Types:", allowedTypes);
-    console.log("🔒 [ProtectedRoute] Pathname:", pathname);
-
     if (!user) {
-      console.log("⛔ [ProtectedRoute] Usuário não autenticado, redirecionando para login");
+      console.log('❌ ProtectedRoute - sem usuário, redirecionando para login');
       router.push(`/login?redirect=${encodeURIComponent(pathname ?? redirectTo)}`);
       return;
     }
 
     if (user.userType && !allowedTypes.includes(user.userType)) {
-      console.log("⛔ [ProtectedRoute] Usuário não tem permissão. Redirecionando...");
-
-      // Usar utilitário para obter rota correta
-      const dashboardRoute = getDashboardRoute(user.userType as UserType);
-      console.log("➡️ [ProtectedRoute] Redirecionando para:", dashboardRoute);
-      router.push(dashboardRoute);
+      console.log('❌ ProtectedRoute - tipo não permitido:', user.userType, 'permitidos:', allowedTypes);
+      if (user.userType === "admin") {
+        router.push("/admin");
+      } else if (user.userType === "guia") {
+        router.push("/guia");
+      } else if (user.userType === "cliente") {
+        router.push("/cliente");
+      } else {
+        router.push(redirectTo);
+      }
     } else {
-      console.log("✅ [ProtectedRoute] Acesso permitido");
+      console.log('✅ ProtectedRoute - acesso permitido');
     }
   }, [user, loading, allowedTypes, redirectTo, router, pathname]);
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-3 text-gray-600 text-sm">
-            {loading ? "Carregando..." : "Redirecionando..."}
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {loading ? "Verificando acesso..." : "Redirecionando para login..."}
           </p>
         </div>
       </div>
@@ -62,10 +67,10 @@ export default function ProtectedRoute({
 
   if (user.userType && !allowedTypes.includes(user.userType)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-3 text-gray-600 text-sm">Redirecionando...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecionando...</p>
         </div>
       </div>
     );

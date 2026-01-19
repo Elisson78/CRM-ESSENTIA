@@ -20,24 +20,20 @@ export default function Footer() {
               Explore a Itália com quem entende. Sua jornada dos sonhos começa aqui.
             </p>
             <div className="flex space-x-4">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-md bg-gradient-to-br from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 flex items-center justify-center transition-all shadow-lg hover:shadow-xl"
-                aria-label="Instagram"
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="border-gray-600 hover:bg-blue-600 hover:border-blue-600"
               >
-                <Instagram className="w-5 h-5 text-white" />
-              </a>
-              <a
-                href="https://wa.me/5511999999999"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-md bg-green-500 hover:bg-green-600 flex items-center justify-center transition-all shadow-lg hover:shadow-xl"
-                aria-label="WhatsApp"
+                <Instagram className="w-4 h-4" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="outline"
+                className="border-gray-600 hover:bg-green-600 hover:border-green-600"
               >
-                <MessageCircle className="w-5 h-5 text-white" />
-              </a>
+                <MessageCircle className="w-4 h-4" />
+              </Button>
             </div>
           </motion.div>
 
@@ -100,7 +96,7 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">contato@turguide.com</span>
+                <span className="text-gray-300 text-sm">contato@essentia.travel</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="w-4 h-4 text-blue-400" />

@@ -19,7 +19,7 @@ import {
   CalendarDays,
   Users,
   Heart,
-  LogOut,
+  LogOut, Image as ImageIcon,
 } from "lucide-react";
 import AdminMobileNav from "./admin-mobile-nav";
 import AddTourModal from "./add-tour-modal";
@@ -32,7 +32,7 @@ interface Tour {
   duration: number;
   status: string;
   type: string;
-  description?: string;
+  description: string;
   maxPeople?: number;
   languages?: string[];
   includedItems?: string[];
@@ -144,11 +144,10 @@ const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user,
             <a
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                item.active
-                  ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
+                ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                : "text-gray-700 hover:bg-gray-50"
+                }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -177,7 +176,7 @@ const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user,
   </div>
 );
 
-const ActionDropdown: React.FC<{ tour: Tour; onEditTour: (tourId: string) => void }> = ({ tour, onEditTour }) => {
+const ActionDropdown: React.FC<{ tour: Tour; onEditTour: (id: string) => void; onDeleteTour: (id: string) => void }> = ({ tour, onEditTour, onDeleteTour }) => {
   const [isOpen, setIsOpen] = useState(false);
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -200,7 +199,7 @@ const ActionDropdown: React.FC<{ tour: Tour; onEditTour: (tourId: string) => voi
         <MoreVertical className="h-4 w-4" />
       </Button>
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border">
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
           <Button
             variant="ghost"
             className="w-full justify-start gap-2"
@@ -214,7 +213,14 @@ const ActionDropdown: React.FC<{ tour: Tour; onEditTour: (tourId: string) => voi
           <Button variant="ghost" className="w-full justify-start gap-2">
             <Eye className="h-4 w-4" /> Visualizar
           </Button>
-          <Button variant="ghost" className="w-full justify-start gap-2 text-red-600">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={() => {
+              onDeleteTour(tour.id);
+              setIsOpen(false);
+            }}
+          >
             <Trash2 className="h-4 w-4" /> Excluir
           </Button>
         </div>
@@ -236,27 +242,54 @@ const ManageToursPage: React.FC = () => {
     fetchTours();
   }, []);
 
+  // Helper robusto para garantir array de strings
+  const safeJsonParse = (value: unknown, fallback: string[] = []) => {
+    if (!value) return fallback;
+    if (Array.isArray(value)) {
+      return value.filter(item => typeof item === 'string'); // Garantir apenas strings
+    }
+    if (typeof value === "object") return fallback;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed.filter(item => typeof item === 'string');
+        } catch (e) {
+          console.warn("Erro ao fazer parse do JSON:", trimmed, e);
+        }
+      }
+      return trimmed
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item);
+    }
+    return fallback;
+  };
+
   const fetchTours = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/passeios");
+      const response = await fetch(`/api/passeios?t=${Date.now()}`); // Cache busting
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched tours data:", data);
         setTours(
           data.map((tour: any) => ({
             id: tour.id,
             name: tour.nome,
-            location: tour.categoria,
-            price: tour.preco,
-            duration: parseInt(tour.duracao?.replace("h", "") || "0", 10),
-            status: tour.ativo ? "Ativo" : "Inativo",
-            type: tour.categoria,
             description: tour.descricao,
             maxPeople: tour.capacidadeMaxima,
-            languages: tour.idiomas || [],
-            includedItems: tour.inclusoes || [],
-            images: tour.imagens || [],
+            languages: safeJsonParse(tour.idiomas),
+            includedItems: safeJsonParse(tour.inclusoes),
+            images: safeJsonParse(tour.imagens || tour.images), // Tenta ambos
             specialRequirements: tour.requisitosEspeciais || "",
+            // Parse price safely
+            price: typeof tour.preco === 'number' ? tour.preco : parseFloat(tour.preco) || 0,
+            location: tour.categoria || "Geral",
+            duration: parseInt(tour.duracao?.replace("h", "") || "0", 10),
+            status: tour.ativo ? "Ativo" : "Inativo",
+            type: tour.categoria || "Geral",
           }))
         );
       } else {
@@ -286,15 +319,16 @@ const ManageToursPage: React.FC = () => {
             id: newTour.id,
             name: newTour.nome,
             location: newTour.categoria,
-            price: newTour.preco,
+            // Parse price safely to prevent crash
+            price: typeof newTour.preco === 'number' ? newTour.preco : parseFloat(newTour.preco) || 0,
             duration: parseInt(newTour.duracao?.replace("h", "") || "0", 10),
             status: newTour.ativo ? "Ativo" : "Inativo",
             type: newTour.categoria,
             description: newTour.descricao,
             maxPeople: newTour.capacidadeMaxima,
-            languages: newTour.idiomas || [],
-            includedItems: newTour.inclusoes || [],
-            images: newTour.imagens || [],
+            languages: safeJsonParse(newTour.idiomas),
+            includedItems: safeJsonParse(newTour.inclusoes),
+            images: safeJsonParse(newTour.imagens || newTour.images),
             specialRequirements: newTour.requisitosEspeciais || "",
           },
           ...prevTours,
@@ -312,39 +346,18 @@ const ManageToursPage: React.FC = () => {
     try {
       console.log('🔍 Buscando passeio:', tourId);
       const response = await fetch(`/api/passeios/${tourId}`);
-      
+
       console.log('📡 Response status:', response.status);
-      
+
       if (response.ok) {
         const passeioData = await response.json();
         console.log('✅ Dados do passeio:', passeioData);
-        
-        const safeJsonParse = (value: unknown, fallback: string[] = []) => {
-          if (!value) return fallback;
-          if (Array.isArray(value)) return value;
-          if (typeof value === "object") return fallback;
-          if (typeof value === "string") {
-            const trimmed = value.trim();
-            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-              try {
-                return JSON.parse(trimmed);
-              } catch (e) {
-                console.warn("Erro ao fazer parse do JSON:", trimmed, e);
-              }
-            }
-            return trimmed
-              .split(",")
-              .map((item) => item.trim())
-              .filter((item) => item);
-          }
-          return fallback;
-        };
 
         const formattedTour: Tour = {
           id: passeioData.id,
           name: passeioData.nome,
           location: passeioData.categoria,
-          price: passeioData.preco,
+          price: typeof passeioData.preco === 'number' ? passeioData.preco : parseFloat(passeioData.preco) || 0,
           duration: parseInt(passeioData.duracao?.replace("h", "") || "0", 10),
           status: passeioData.ativo ? "Ativo" : "Inativo",
           type: passeioData.categoria,
@@ -352,7 +365,7 @@ const ManageToursPage: React.FC = () => {
           maxPeople: passeioData.capacidadeMaxima || 0,
           languages: safeJsonParse(passeioData.idiomas),
           includedItems: safeJsonParse(passeioData.inclusoes),
-          images: safeJsonParse(passeioData.imagens),
+          images: safeJsonParse(passeioData.imagens || passeioData.images),
           specialRequirements: passeioData.requisitosEspeciais || "",
         };
 
@@ -389,6 +402,26 @@ const ManageToursPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Erro ao atualizar passeio:", error);
+    }
+  };
+
+  const handleDeleteTour = async (tourId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este passeio?")) return;
+
+    try {
+      const response = await fetch(`/api/passeios/${tourId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setTours((prev) => prev.filter((t) => t.id !== tourId));
+      } else {
+        console.error("Erro ao excluir passeio");
+        alert("Erro ao excluir passeio");
+      }
+    } catch (error) {
+      console.error("Erro ao excluir passeio:", error);
+      alert("Erro ao excluir passeio");
     }
   };
 
@@ -452,15 +485,30 @@ const ManageToursPage: React.FC = () => {
                       {tours.map((tour) => (
                         <tr key={tour.id}>
                           <td className="px-6 py-4">
-                            <p className="font-medium text-gray-900">{tour.name}</p>
-                            <p className="text-sm text-gray-500">{tour.type}</p>
+                            <div className="flex items-center gap-4">
+                              <div className="h-12 w-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                {tour.images && tour.images.length > 0 ? (
+                                  <img
+                                    src={tour.images[0]}
+                                    alt={tour.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <ImageIcon className="h-5 w-5 text-gray-400" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{tour.name}</p>
+                                <p className="text-sm text-gray-500">{tour.type}</p>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <span className="text-gray-600">{tour.location}</span>
                           </td>
                           <td className="px-6 py-4">
                             <span className="text-gray-900 font-medium">
-                              R$ {tour.price.toFixed(2)}
+                              R$ {Number(tour.price || 0).toFixed(2)}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -478,7 +526,9 @@ const ManageToursPage: React.FC = () => {
                             </Badge>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <ActionDropdown tour={tour} onEditTour={handleEditTour} />
+                            <td className="px-6 py-4 text-right">
+                              <ActionDropdown tour={tour} onEditTour={handleEditTour} onDeleteTour={handleDeleteTour} />
+                            </td>
                           </td>
                         </tr>
                       ))}

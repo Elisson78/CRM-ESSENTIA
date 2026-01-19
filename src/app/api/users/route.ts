@@ -1,30 +1,35 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("🔍 Iniciando busca de usuários...");
+    console.log("🔍 Iniciando busca de usuários (SQL)...");
 
-    const allUsers = await prisma.user.findMany();
+    const result = await db.query('SELECT * FROM users');
+    const allUsers = result.rows;
 
     console.log("✅ Usuários encontrados:", allUsers.length);
 
     const formattedUsers = allUsers.map((user) => {
-      const [firstName, ...lastNameParts] = (user.nome || "").split(" ");
+      // Map snake_case to camelCase
+      const nome = user.nome || "";
+      const [firstName, ...lastNameParts] = nome.split(" ");
+
       return {
         id: user.id,
         email: user.email,
-        firstName: user.firstName || firstName || "",
-        lastName: user.lastName || lastNameParts.join(" ") || "",
-        userType: user.userType,
+        firstName: user.first_name || firstName || "",
+        lastName: user.last_name || lastNameParts.join(" ") || "",
+        userType: user.user_type,
         telefone: user.telefone,
         endereco: user.endereco,
         cpf: user.cpf,
         status: "ativo",
-        createdAt: user.createdAt?.toISOString() || new Date().toISOString(),
-        updatedAt: user.updatedAt?.toISOString() || new Date().toISOString(),
+        // pg returns Date objects
+        createdAt: user.created_at ? new Date(user.created_at).toISOString() : new Date().toISOString(),
+        updatedAt: user.updated_at ? new Date(user.updated_at).toISOString() : new Date().toISOString(),
       };
     });
 
@@ -40,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("🚀 Iniciando criação de usuário...");
+    console.log("🚀 Iniciando criação de usuário (SQL)...");
 
     const body = await request.json();
     const { firstName, lastName, email, userType, password } = body;
@@ -56,21 +61,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Tipo de usuário inválido" }, { status: 400 });
     }
 
-    console.log("🔍 Iniciando criação completa do usuário em DB...");
-
     const hashedPassword = await hashPassword(password);
     const nome = `${firstName} ${lastName}`;
 
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        nome,
-        passwordHash: hashedPassword,
-        userType: userType as any,
-        firstName,
-        lastName,
-      },
-    });
+    // Insert user
+    const insertQuery = `
+      INSERT INTO users (email, nome, password_hash, user_type, first_name, last_name)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, email, nome, user_type, first_name, last_name, created_at
+    `;
+
+    const result = await db.query(insertQuery, [
+      email,
+      nome,
+      hashedPassword,
+      userType,
+      firstName,
+      lastName
+    ]);
+
+    const newUser = result.rows[0];
 
     console.log("✅ Usuário criado com sucesso:", newUser.id);
 
@@ -79,9 +89,9 @@ export async function POST(request: NextRequest) {
       user: {
         id: newUser.id,
         email: newUser.email,
-        firstName,
-        lastName,
-        userType,
+        firstName: newUser.first_name,
+        lastName: newUser.last_name,
+        userType: newUser.user_type,
         nome: newUser.nome,
       },
     });
@@ -93,7 +103,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    console.log("✏️ Iniciando atualização de usuário...");
+    console.log("✏️ Iniciando atualização de usuário (SQL)...");
 
     const { id, firstName, lastName, email, userType, password } = await request.json();
 
@@ -101,28 +111,68 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "ID do usuário é obrigatório" }, { status: 400 });
     }
 
-    console.log("🔄 Atualizando usuário...");
+    // Build dynamic update query
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
 
-    const data: any = {};
-
-    if (email) data.email = email;
-    if (userType) data.userType = userType;
+    if (email) {
+      fields.push(`email = $${paramIndex++}`);
+      values.push(email);
+    }
+    if (userType) {
+      fields.push(`user_type = $${paramIndex++}`);
+      values.push(userType);
+    }
     if (firstName || lastName) {
-      data.firstName = firstName;
-      data.lastName = lastName;
-      data.nome = `${firstName ?? ""} ${lastName ?? ""}`.trim();
+      if (firstName) {
+        fields.push(`first_name = $${paramIndex++}`);
+        values.push(firstName);
+      }
+      if (lastName) {
+        fields.push(`last_name = $${paramIndex++}`);
+        values.push(lastName);
+      }
+      // Also update full name if components change
+      const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim();
+      if (fullName) {
+        fields.push(`nome = $${paramIndex++}`);
+        values.push(fullName);
+      }
     }
 
     if (password) {
-      data.passwordHash = await hashPassword(password);
+      const hashed = await hashPassword(password);
+      fields.push(`password_hash = $${paramIndex++}`);
+      values.push(hashed);
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data,
-    });
+    fields.push(`updated_at = NOW()`);
 
-    return NextResponse.json(updatedUser);
+    if (fields.length === 0) {
+      return NextResponse.json({ message: "Nada a atualizar" });
+    }
+
+    values.push(id);
+    const query = `UPDATE users SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+
+    const result = await db.query(query, values);
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    }
+
+    const updatedUser = result.rows[0];
+
+    // Map back to expected format
+    return NextResponse.json({
+      id: updatedUser.id,
+      email: updatedUser.email,
+      nome: updatedUser.nome,
+      userType: updatedUser.user_type,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name
+    });
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
@@ -131,7 +181,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    console.log("🗑️ Iniciando exclusão de usuário...");
+    console.log("🗑️ Iniciando exclusão de usuário (SQL)...");
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -140,11 +190,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID do usuário é obrigatório" }, { status: 400 });
     }
 
-    console.log("🗑️ Excluindo usuário da tabela...");
+    const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
 
-    await prisma.user.delete({
-      where: { id },
-    });
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+    }
 
     console.log("✅ Usuário removido da tabela");
 

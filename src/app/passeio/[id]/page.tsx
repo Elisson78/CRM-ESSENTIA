@@ -12,13 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { CalendarPt as Calendar } from "@/components/calendar-pt";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  ArrowLeft, 
-  Clock, 
-  Euro, 
-  Users, 
-  Star, 
-  MapPin, 
+import {
+  ArrowLeft,
+  Clock,
+  Euro,
+  Users,
+  Star,
+  MapPin,
   Calendar as CalendarIcon,
   User,
   Heart,
@@ -42,9 +42,9 @@ interface Passeio {
   preco: number;
   duracao: string;
   categoria: string;
-  imagens?: string;
-  inclusoes?: string;
-  idiomas?: string;
+  imagens?: string[];
+  inclusoes?: string[];
+  idiomas?: string[];
   capacidadeMaxima?: number;
   ativo: number;
 }
@@ -98,48 +98,38 @@ export default function PasseioDetalhes() {
 
     setProcessing(true);
     try {
-      const precheckResponse = await fetch('/api/clientes/precheck', {
+      // Fluxo de Lead: Envia para /api/leads
+      const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome: customerInfo.nome,
           email: customerInfo.email,
-          telefone: customerInfo.telefone ?? null,
+          telefone: customerInfo.telefone,
+          passeioId: passeio?.id,
+          passeioNome: passeio?.nome,
+          data: selectedDate,
+          pessoas: selectedPeople,
+          observacoes: customerInfo.observacoes
         }),
       });
 
-      if (!precheckResponse.ok) {
-        const errorPayload = await precheckResponse.json().catch(() => ({}));
-        throw new Error(errorPayload?.error || 'Não foi possível cadastrar o cliente.');
+      if (!response.ok) {
+        throw new Error('Falha ao enviar solicitação.');
       }
 
-      const preCadastro = await precheckResponse.json();
-      if (!preCadastro?.success) {
-        throw new Error(preCadastro?.error || 'Falha no pré-cadastro do cliente.');
-      }
+      // Sucesso
+      const data = await response.json();
+      console.log('Lead criado:', data);
 
-      const valorBase = (passeio?.preco || 0) * selectedPeople;
-      const desconto = isGroup && selectedPeople >= 5 ? 0.1 : 0;
-      const valorFinal = valorBase * (1 - desconto);
+      alert(`Solicitação de reserva recebida com sucesso!\n\nUm de nossos consultores entrará em contato pelo email ${customerInfo.email} para confirmar os detalhes e o pagamento.`);
 
-      const bookingData = {
-        passeioId: passeio?.id,
-        passeioNome: passeio?.nome,
-        data: selectedDate,
-        pessoas: selectedPeople,
-        tipoReserva: isGroup ? "grupo" : "individual",
-        valorOriginal: valorBase,
-        valorTotal: valorFinal,
-        desconto,
-        cliente: customerInfo,
-        preCadastro,
-      };
+      // Limpar formulário ou redirecionar para home
+      router.push('/');
 
-      localStorage.setItem('bookingData', JSON.stringify(bookingData));
-      router.push('/checkout');
     } catch (error) {
-      console.error('Erro no pré-cadastro de cliente:', error);
-      alert(error instanceof Error ? error.message : 'Não foi possível preparar o pagamento. Tente novamente.');
+      console.error('Erro ao enviar lead:', error);
+      alert('Houve um erro ao enviar sua solicitação. Por favor, tente novamente ou entre em contato pelo WhatsApp.');
     } finally {
       setProcessing(false);
     }
@@ -172,8 +162,8 @@ export default function PasseioDetalhes() {
     );
   }
 
-  const inclusoes = Array.isArray(passeio.inclusoes) ? passeio.inclusoes : (passeio.inclusoes ? JSON.parse(passeio.inclusoes) : []);
-  const idiomas = Array.isArray(passeio.idiomas) ? passeio.idiomas : (passeio.idiomas ? JSON.parse(passeio.idiomas) : []);
+  const inclusoes = passeio.inclusoes || [];
+  const idiomas = passeio.idiomas || [];
   const valorTotal = passeio.preco * selectedPeople;
   const desconto = isGroup && selectedPeople >= 5 ? 0.1 : 0;
   const valorFinal = valorTotal * (1 - desconto);
@@ -224,29 +214,8 @@ export default function PasseioDetalhes() {
                   </Badge>
                 </div>
                 {(() => {
-                  // Parse imagens do passeio - parsing robusto  
-                  let imagensArray: string[] = [];
-                  
-                  if (passeio.imagens) {
-                    try {
-                      // Se já é array, usa diretamente
-                      if (Array.isArray(passeio.imagens)) {
-                        imagensArray = passeio.imagens;
-                      } 
-                      // Se é string, tenta fazer parse
-                      else if (typeof passeio.imagens === 'string') {
-                        imagensArray = JSON.parse(passeio.imagens);
-                      }
-                    } catch (error) {
-                      console.warn('Erro ao fazer parse das imagens:', passeio.imagens, error);
-                      // Fallback: se é string simples, coloca em array
-                      if (typeof passeio.imagens === 'string' && passeio.imagens.startsWith('/')) {
-                        imagensArray = [passeio.imagens];
-                      }
-                    }
-                  }
-
-                  const primeiraImagem = imagensArray && imagensArray.length > 0 ? imagensArray[0] : null;
+                  const imagensArray = passeio.imagens || [];
+                  const primeiraImagem = imagensArray.length > 0 ? imagensArray[0] : null;
 
                   if (primeiraImagem) {
                     return (
@@ -461,11 +430,11 @@ export default function PasseioDetalhes() {
                       type="button"
                       variant={!isGroup ? "default" : "outline"}
                       size="sm"
-                      onClick={() => {setIsGroup(false); setSelectedPeople(1);}}
+                      onClick={() => { setIsGroup(false); setSelectedPeople(1); }}
                       className={cn(
                         "flex-1 h-11 border-2 transition-all",
-                        !isGroup 
-                          ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500" 
+                        !isGroup
+                          ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
                           : "border-gray-200 hover:border-orange-300 hover:bg-orange-50"
                       )}
                     >
@@ -476,11 +445,11 @@ export default function PasseioDetalhes() {
                       type="button"
                       variant={isGroup ? "default" : "outline"}
                       size="sm"
-                      onClick={() => {setIsGroup(true); setSelectedPeople(5);}}
+                      onClick={() => { setIsGroup(true); setSelectedPeople(5); }}
                       className={cn(
                         "flex-1 h-11 border-2 transition-all",
-                        isGroup 
-                          ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500" 
+                        isGroup
+                          ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
                           : "border-gray-200 hover:border-orange-300 hover:bg-orange-50"
                       )}
                     >
@@ -521,7 +490,7 @@ export default function PasseioDetalhes() {
                 {/* Informações do cliente */}
                 <div className="border-t pt-4">
                   <h4 className="text-lg font-semibold mb-4 text-gray-900">Suas informações</h4>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="nome" className="text-sm font-semibold text-gray-900">Nome completo *</Label>
@@ -529,7 +498,7 @@ export default function PasseioDetalhes() {
                         id="nome"
                         placeholder="Digite seu nome completo"
                         value={customerInfo.nome}
-                        onChange={(e) => setCustomerInfo({...customerInfo, nome: e.target.value})}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, nome: e.target.value })}
                         className="mt-2 h-11 border-2 hover:border-orange-300 focus:border-orange-500"
                       />
                     </div>
@@ -541,7 +510,7 @@ export default function PasseioDetalhes() {
                         type="email"
                         placeholder="seu@email.com"
                         value={customerInfo.email}
-                        onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                         className="mt-2 h-11 border-2 hover:border-orange-300 focus:border-orange-500"
                       />
                     </div>
@@ -552,7 +521,7 @@ export default function PasseioDetalhes() {
                         id="telefone"
                         placeholder="(11) 99999-9999"
                         value={customerInfo.telefone}
-                        onChange={(e) => setCustomerInfo({...customerInfo, telefone: e.target.value})}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, telefone: e.target.value })}
                         className="mt-2 h-11 border-2 hover:border-orange-300 focus:border-orange-500"
                       />
                     </div>
@@ -563,7 +532,7 @@ export default function PasseioDetalhes() {
                         id="observacoes"
                         placeholder="Alguma solicitação especial ou informação importante?"
                         value={customerInfo.observacoes}
-                        onChange={(e) => setCustomerInfo({...customerInfo, observacoes: e.target.value})}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, observacoes: e.target.value })}
                         className="mt-2 border-2 hover:border-orange-300 focus:border-orange-500 resize-none"
                         rows={3}
                       />
@@ -602,12 +571,12 @@ export default function PasseioDetalhes() {
                   size="lg"
                   disabled={processing}
                 >
-                  {processing ? 'Preparando...' : '🎯 Continuar para pagamento'}
+                  {processing ? 'Enviando...' : '📝 Solicitar Reserva'}
                 </Button>
 
                 <div className="text-center space-y-1">
                   <p className="text-xs text-gray-500">
-                    🔒 Você não será cobrado ainda. Confirme os detalhes na próxima etapa.
+                    🔒 Pagamento realizado apenas após confirmação do consultor.
                   </p>
                   <p className="text-xs text-green-600 font-medium">
                     ✅ Cancelamento gratuito até 24h antes

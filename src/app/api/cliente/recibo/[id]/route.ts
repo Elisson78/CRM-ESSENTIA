@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -10,32 +10,45 @@ export async function GET(
     const params = await context.params;
     const reservaId = params.id;
 
-    // Buscar dados completos da reserva via Prisma
-    const agendamento = await prisma.agendamento.findUnique({
-      where: { id: reservaId },
-    });
+    // Buscar dados completos da reserva via SQL Join
+    const query = `
+        SELECT 
+            a.id, 
+            a.data_passeio, 
+            a.numero_pessoas, 
+            a.valor_total, 
+            a.status, 
+            a.observacoes, 
+            a.criado_em,
+            p.nome as passeio_nome,
+            c.nome as cliente_nome,
+            c.email as cliente_email,
+            c.telefone as cliente_telefone
+        FROM agendamentos a
+        LEFT JOIN passeios p ON a.passeio_id = p.id
+        LEFT JOIN clientes c ON a.cliente_id = c.id
+        WHERE a.id = $1
+    `;
+
+    const result = await db.query(query, [reservaId]);
+    const agendamento = result.rows[0];
 
     if (!agendamento) {
       return NextResponse.json({ error: 'Reserva não encontrada' }, { status: 404 });
     }
 
-    const [passeio, cliente] = await Promise.all([
-      prisma.passeio.findUnique({ where: { id: agendamento.passeioId } }),
-      agendamento.clienteId ? prisma.cliente.findUnique({ where: { id: agendamento.clienteId } }) : null
-    ]);
-
     const dadosReserva = {
       agendamentoId: agendamento.id,
-      passeioNome: passeio?.nome || "Passeio não informado",
-      dataPasseio: agendamento.dataPasseio,
-      numeroPessoas: agendamento.numeroPessoas,
-      valorTotal: agendamento.valorTotal || 0,
+      passeioNome: agendamento.passeio_nome || "Passeio não informado",
+      dataPasseio: agendamento.data_passeio,
+      numeroPessoas: agendamento.numero_pessoas,
+      valorTotal: parseFloat(agendamento.valor_total) || 0,
       status: agendamento.status,
       observacoes: agendamento.observacoes,
-      criadoEm: agendamento.createdAt,
-      clienteNome: cliente?.nome || "Cliente não informado",
-      clienteEmail: cliente?.email || "Email não informado",
-      clienteTelefone: cliente?.telefone || "Não informado"
+      criadoEm: agendamento.criado_em,
+      clienteNome: agendamento.cliente_nome || "Cliente não informado",
+      clienteEmail: agendamento.cliente_email || "Email não informado",
+      clienteTelefone: agendamento.cliente_telefone || "Não informado"
     };
 
     // Gerar HTML do recibo
@@ -68,7 +81,7 @@ export async function GET(
         <div class="info-card">
           <div class="info-title">Informações do Passeio</div>
           <p><strong>Passeio:</strong> ${dadosReserva.passeioNome}</p>
-          <p><strong>Data:</strong> ${new Date(dadosReserva.dataPasseio).toLocaleDateString('pt-BR')}</p>
+          <p><strong>Data:</strong> ${dadosReserva.dataPasseio ? new Date(dadosReserva.dataPasseio).toLocaleDateString('pt-BR') : 'Data não informada'}</p>
           <p><strong>Pessoas:</strong> ${dadosReserva.numeroPessoas}</p>
           <p><strong>Status:</strong> ${dadosReserva.status}</p>
         </div>

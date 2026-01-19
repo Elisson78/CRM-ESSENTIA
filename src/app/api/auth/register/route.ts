@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
@@ -19,24 +19,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
+    const existingUserResult = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingUserResult.rows.length > 0) {
       return NextResponse.json({ error: "Email já cadastrado" }, { status: 400 });
     }
 
     const hashedPassword = await hashPassword(senha);
 
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        passwordHash: hashedPassword,
-        nome,
-        userType: tipo as any,
-      },
-    });
+    // Insert new user
+    // Note: gen_random_uuid() is used in default, but we should let DB handle ID generation if default is set, 
+    // or we can just omit ID if the column has a default. 
+    // Looking at schema earlier, ID has default(dbgenerated("gen_random_uuid()")).
+    // User type default is 'cliente'.
+
+    // We explicitly set columns.
+    const insertResult = await db.query(
+      `INSERT INTO users (email, password_hash, nome, user_type) 
+       VALUES ($1, $2, $3, $4) 
+       RETURNING id, user_type`,
+      [email, hashedPassword, nome, tipo]
+    );
+
+    const newUser = insertResult.rows[0];
 
     // Determine default redirect based on user type
     let redirectUrl = "/";

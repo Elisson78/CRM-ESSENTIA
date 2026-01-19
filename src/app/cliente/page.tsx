@@ -1,28 +1,52 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import ProtectedRoute from '@/components/ProtectedRoute';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, Calendar, MapPin, Phone, Mail } from 'lucide-react';
 
 export default function ClienteDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
+  const router = useRouter();
 
-  if (!user) {
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user) {
+      router.push('/login?redirect=/cliente');
+      return;
+    }
+
+    if (user.userType !== 'cliente') {
+      if (user.userType === 'admin') {
+        router.push('/admin');
+      } else if (user.userType === 'guia') {
+        router.push('/guia');
+      } else {
+        router.push('/login');
+      }
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
     return (
-      <ProtectedRoute allowedTypes={['cliente']}>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <p className="text-gray-600">Carregando dados do cliente...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando...</p>
         </div>
-      </ProtectedRoute>
+      </div>
     );
   }
 
+  if (!user || user.userType !== 'cliente') {
+    return null;
+  }
+
   return (
-    <ProtectedRoute allowedTypes={['cliente']}>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -108,7 +132,7 @@ export default function ClienteDashboard() {
         <div className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle>Bem-vindo ao TurGuide!</CardTitle>
+              <CardTitle>Bem-vindo à ESSENTIA TRAVEL!</CardTitle>
               <CardDescription>
                 Sua plataforma de turismo personalizado
               </CardDescription>
@@ -148,6 +172,5 @@ export default function ClienteDashboard() {
         </div>
       </div>
     </div>
-    </ProtectedRoute>
   );
 }

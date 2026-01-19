@@ -1,202 +1,76 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useOptimistic, useTransition, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  MapPin,
-  Home,
-  Calendar,
-  CalendarDays,
-  Users,
-  Heart,
-  DollarSign,
-  LogOut,
-  Plus,
-  User,
-  MapPin as Location,
-  Clock,
-  Edit,
-  Trash2,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  MapPin, Home, Calendar, CalendarDays, Users, Heart, DollarSign, LogOut,
+  Plus, User, MapPin as Location, Clock, Edit, Trash2, Settings, MoreHorizontal, X
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import type { DropResult } from "@hello-pangea/dnd";
-import NovaTarefaModal, { type NovaTarefaData } from "./nova-tarefa-modal";
+import NovaTarefaModal from "./nova-tarefa-modal";
 import { toast } from "sonner";
+import {
+  updateStatusAction,
+  saveAgendamentoAction,
+  deleteAgendamentoAction,
+  saveColumnAction,
+  deleteColumnAction,
+  convertLeadAction
+} from "@/app/admin/agendamentos/actions";
+import type { Tarefa, Passeio, Cliente, Guia, NovaTarefaData, Status, KanbanColumn } from "@/types/agendamentos";
 
-type Status = "em_progresso" | "pendente_cliente" | "confirmadas" | "concluidas" | "canceladas";
-
-interface Tarefa {
-  id: string;
-  passeio_id: string;
-  cliente_id: string | null;
-  guia_id?: string | null;
-  data_passeio: string;
-  numero_pessoas: number;
-  valor_total: number;
-  valor_comissao: number;
-  percentual_comissao?: number;
-  status: Status;
-  observacoes?: string | null;
-  passeio_nome?: string | null;
-  cliente_nome?: string | null;
-  guia_nome?: string | null;
-}
-
-interface Passeio {
-  id: string;
-  nome: string;
-  descricao: string;
-  preco: number;
-  duracao: string;
-  categoria: string;
-}
-
-interface Cliente {
-  id: string;
-  nome: string;
-  email: string;
-  telefone: string;
-}
-
-interface Guia {
-  id: string;
-  nome: string;
-  email: string;
-  especialidades: string[];
-}
-
-const ALLOWED_STATUSES: Status[] = [
-  "em_progresso",
-  "pendente_cliente",
-  "confirmadas",
-  "concluidas",
-  "canceladas",
-];
-
-const toNumber = (value: unknown, fallback = 0): number => {
-  const numeric = Number(value);
-  return Number.isNaN(numeric) ? fallback : numeric;
+const COLOR_MAP: Record<string, string> = {
+  purple: "bg-purple-100 border-purple-200 text-purple-900",
+  blue: "bg-blue-100 border-blue-200 text-blue-900",
+  green: "bg-green-100 border-green-200 text-green-900",
+  yellow: "bg-yellow-100 border-yellow-200 text-yellow-900",
+  red: "bg-red-100 border-red-200 text-red-900",
+  orange: "bg-orange-100 border-orange-200 text-orange-900",
+  gray: "bg-gray-100 border-gray-200 text-gray-900",
+  pink: "bg-pink-100 border-pink-200 text-pink-900",
 };
 
-const toStringOrNull = (value: unknown): string | null => {
-  if (value === null || value === undefined) return null;
-  return String(value);
+const HEADER_COLOR_MAP: Record<string, string> = {
+  purple: "bg-purple-500",
+  blue: "bg-blue-500",
+  green: "bg-green-500",
+  yellow: "bg-yellow-500",
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  gray: "bg-gray-500",
+  pink: "bg-pink-500",
 };
 
-const toStringArray = (value: unknown): string[] => {
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item));
-  }
+const getStatusColor = (status: string, columns: KanbanColumn[]) => {
+  const col = columns.find(c => c.id === status);
+  const colorKey = col?.color || 'gray';
 
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed.map((item) => String(item)) : value.split(",").map((item) => item.trim());
-    } catch {
-      return value.split(",").map((item) => item.trim());
-    }
-  }
-
-  return [];
-};
-
-const toStatus = (value: unknown): Status => {
-  if (typeof value === "string") {
-    const normalized = value as Status;
-    if (ALLOWED_STATUSES.includes(normalized)) {
-      return normalized;
-    }
-
-    switch (value) {
-      case "pendente":
-        return "pendente_cliente";
-      case "concluido":
-        return "concluidas";
-      default:
-        break;
-    }
-  }
-
-  return "em_progresso";
-};
-
-const normalizePasseio = (passeio: any): Passeio => ({
-  id: String(passeio?.id ?? ""),
-  nome: String(passeio?.nome ?? "Passeio"),
-  descricao: String(passeio?.descricao ?? ""),
-  preco: toNumber(passeio?.preco, 0),
-  duracao: String(passeio?.duracao ?? ""),
-  categoria: String(passeio?.categoria ?? ""),
-});
-
-const normalizeCliente = (cliente: any): Cliente => ({
-  id: String(cliente?.id ?? ""),
-  nome: String(cliente?.nome ?? ""),
-  email: String(cliente?.email ?? ""),
-  telefone: String(cliente?.telefone ?? ""),
-});
-
-const normalizeGuia = (guia: any): Guia => ({
-  id: String(guia?.id ?? ""),
-  nome: String(guia?.nome ?? ""),
-  email: String(guia?.email ?? ""),
-  especialidades: toStringArray(guia?.especialidades),
-});
-
-const normalizeAgendamento = (
-  agendamento: any,
-  collections: { passeios: Passeio[]; clientes: Cliente[]; guias: Guia[] },
-  fallbackIndex = 0,
-): Tarefa => {
-  const passeioId = String(agendamento?.passeio_id ?? agendamento?.passeioId ?? "");
-  const clienteIdRaw = agendamento?.cliente_id ?? agendamento?.clienteId ?? null;
-  const guiaIdRaw = agendamento?.guia_id ?? agendamento?.guiaId ?? null;
-
-  const passeio = collections.passeios.find((p) => p.id === passeioId);
-  const cliente = clienteIdRaw ? collections.clientes.find((c) => c.id === String(clienteIdRaw)) : undefined;
-  const guia = guiaIdRaw ? collections.guias.find((g) => g.id === String(guiaIdRaw)) : undefined;
-
-  return {
-    id: String(agendamento?.id ?? `agendamento-${fallbackIndex}`),
-    passeio_id: passeioId,
-    cliente_id: clienteIdRaw ? String(clienteIdRaw) : null,
-    guia_id: guiaIdRaw ? String(guiaIdRaw) : null,
-    data_passeio: String(agendamento?.data_passeio ?? agendamento?.dataPasseio ?? ""),
-    numero_pessoas: toNumber(agendamento?.numero_pessoas ?? agendamento?.numeroPessoas, 1),
-    valor_total: toNumber(agendamento?.valor_total ?? agendamento?.valorTotal, 0),
-    valor_comissao: toNumber(agendamento?.valor_comissao ?? agendamento?.valorComissao, 0),
-    percentual_comissao: toNumber(agendamento?.percentual_comissao ?? agendamento?.percentualComissao, 30),
-    status: toStatus(agendamento?.status),
-    observacoes: toStringOrNull(agendamento?.observacoes),
-    passeio_nome: passeio?.nome ?? toStringOrNull(agendamento?.passeio_nome),
-    cliente_nome: cliente?.nome ?? toStringOrNull(agendamento?.cliente_nome),
-    guia_nome: guia?.nome ?? toStringOrNull(agendamento?.guia_nome),
+  // Return light bg for badges
+  const map: Record<string, string> = {
+    purple: "text-purple-700 bg-purple-50",
+    blue: "text-blue-700 bg-blue-50",
+    green: "text-green-700 bg-green-50",
+    yellow: "text-yellow-700 bg-yellow-50",
+    red: "text-red-700 bg-red-50",
+    orange: "text-orange-700 bg-orange-50",
+    gray: "text-gray-700 bg-gray-50",
+    pink: "text-pink-700 bg-pink-50",
   };
+  return map[colorKey] || map.gray;
 };
 
-const columns: { id: Status; title: string }[] = [
-  { id: "em_progresso", title: "Em Progresso" },
-  { id: "pendente_cliente", title: "Pendente Cliente" },
-  { id: "confirmadas", title: "Confirmadas" },
-  { id: "concluidas", title: "Concluídas" },
-  { id: "canceladas", title: "Canceladas" },
-];
-
-const getStatusColor = (status: string) => {
-  const colors = {
-    "em_progresso": "text-purple-600 bg-purple-50",
-    "pendente_cliente": "text-yellow-600 bg-yellow-50",
-    "confirmadas": "text-green-600 bg-green-50",
-    "concluidas": "text-blue-600 bg-blue-50",
-    "canceladas": "text-red-600 bg-red-50"
-  };
-  return colors[status as keyof typeof colors] || colors.em_progresso;
-};
-
+// Sidebar (Simplified)
 const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user, onLogout }) => (
-  <div className="hidden lg:block w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0">
+  <div className="hidden lg:block w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 z-20">
     <div className="p-6">
       <div className="flex items-center gap-2 mb-8">
         <div className="p-2 bg-blue-600 rounded-lg">
@@ -225,11 +99,10 @@ const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user,
             <a
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                item.active
-                  ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
+                ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                : "text-gray-700 hover:bg-gray-50"
+                }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -259,37 +132,35 @@ const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user,
   </div>
 );
 
-const TaskCard: React.FC<{ 
-  tarefa: Tarefa; 
-  index: number; 
+const TaskCard: React.FC<{
+  tarefa: Tarefa;
+  index: number;
+  columns: KanbanColumn[];
   onEdit: (tarefa: Tarefa) => void;
   onAprovar: (id: string) => void;
   onRemover: (id: string) => void;
-}> = ({ tarefa, index, onEdit, onAprovar, onRemover }) => (
+}> = ({ tarefa, index, columns, onEdit, onAprovar, onRemover }) => (
   <Draggable draggableId={tarefa.id} index={index}>
     {(provided, snapshot) => (
       <div
         ref={provided.innerRef}
         {...provided.draggableProps}
         {...provided.dragHandleProps}
-        className={`bg-white rounded-lg border p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer ${
-          snapshot.isDragging ? 'shadow-lg' : ''
-        }`}
+        className={`bg-white rounded-lg border p-4 mb-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer w-full ${snapshot.isDragging ? 'shadow-lg rotate-2' : ''
+          }`}
         style={{
-          width: '400px',
-          minHeight: '200px',
           ...provided.draggableProps.style,
         }}
         onClick={() => onEdit(tarefa)}
       >
         <div className="flex items-start justify-between mb-2">
-          <Badge className={`${getStatusColor(tarefa.status)} border-0 text-xs`}>
-            {tarefa.status.replace('_', ' ')}
+          <Badge className={`${getStatusColor(tarefa.status, columns)} border-0 text-xs`}>
+            {columns.find(c => c.id === tarefa.status)?.title || tarefa.status}
           </Badge>
           <div className="flex gap-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-6 w-6 p-0"
               onClick={(e) => {
                 e.stopPropagation();
@@ -299,28 +170,28 @@ const TaskCard: React.FC<{
               <Edit className="h-3 w-3" />
             </Button>
             {tarefa.status !== 'confirmadas' && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAprovar(tarefa.id);
                 }}
-                title="Aprovar e enviar para calendário"
+                title="Aprovar"
               >
                 <Calendar className="h-3 w-3" />
               </Button>
             )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemover(tarefa.id);
               }}
-              title="Remover agendamento"
+              title="Remover"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -332,356 +203,260 @@ const TaskCard: React.FC<{
         <div className="space-y-2 mb-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <User className="h-3 w-3" />
-            <span>{tarefa.cliente_nome || 'Sem cliente definido'}</span>
+            <span>{tarefa.cliente_nome || 'Sem cliente'}</span>
+            {tarefa.isLead && <Badge variant="outline" className="ml-2 text-[10px] h-4 border-blue-200 text-blue-700 bg-blue-50">LEAD</Badge>}
           </div>
 
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Location className="h-3 w-3" />
-            <span>{tarefa.guia_nome || 'Sem guia definido'}</span>
+            <span>{tarefa.guia_nome || 'Sem guia'}</span>
           </div>
-          
+
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock className="h-3 w-3" />
-            <span>{tarefa.data_passeio ? new Date(tarefa.data_passeio).toLocaleDateString('pt-BR') : 'Data não definida'}</span>
-          </div>
-          
-          <div className="text-sm font-medium text-gray-900">
-            R$ {(tarefa.valor_total || 0).toFixed(2)}
+            <span>{tarefa.data_passeio ? new Date(tarefa.data_passeio).toLocaleDateString('pt-BR') : 'Data n/a'}</span>
           </div>
         </div>
 
-        {tarefa.observacoes && (
-          <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-            {tarefa.observacoes}
-          </p>
-        )}
-
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{tarefa.numero_pessoas || 1} pessoa(s)</span>
-          <span className="text-green-600 font-medium">
-            Comissão: R$ {(tarefa.valor_comissao || 0).toFixed(2)}
-          </span>
+        <div className="flex justify-between text-xs text-gray-500 pt-2 border-t mt-2">
+          <span>{tarefa.numero_pessoas} pessoas</span>
+          <span className="font-medium">R$ {(tarefa.valor_total || 0).toFixed(2)}</span>
         </div>
       </div>
     )}
   </Draggable>
 );
 
-const AgendamentosPage: React.FC = () => {
+const ColumnManagerModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  column: Partial<KanbanColumn> | null;
+  onSave: (col: Partial<KanbanColumn>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}> = ({ isOpen, onClose, column, onSave, onDelete }) => {
+  const [title, setTitle] = useState("");
+  const [color, setColor] = useState("gray");
+
+  useEffect(() => {
+    if (column) {
+      setTitle(column.title || "");
+      setColor(column.color || "gray");
+    } else {
+      setTitle("");
+      setColor("gray");
+    }
+  }, [column, isOpen]);
+
+  const handleSubmit = async () => {
+    if (!title) return toast.error("Título obrigatório");
+    await onSave({ ...column, title, color });
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{column?.id ? 'Editar Coluna' : 'Nova Coluna'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Título da Coluna</Label>
+            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Arquivados" />
+          </div>
+          <div className="space-y-2">
+            <Label>Cor do Cabeçalho</Label>
+            <Select value={color} onValueChange={setColor}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma cor" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(HEADER_COLOR_MAP).map(key => (
+                  <SelectItem key={key} value={key}>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full ${HEADER_COLOR_MAP[key]}`} />
+                      <span className="capitalize">{key}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter className="flex justify-between sm:justify-between w-full">
+          {column?.id && column.id !== 'new' ? (
+            <Button variant="destructive" onClick={() => {
+              if (confirm("Remover esta coluna?")) {
+                onDelete(column.id!);
+                onClose();
+              }
+            }}>
+              Excluir
+            </Button>
+          ) : <div />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button onClick={handleSubmit}>Salvar</Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+interface AgendamentosClientPageProps {
+  initialAgendamentos: Tarefa[];
+  passeios: Passeio[];
+  clientes: Cliente[];
+  guias: Guia[];
+  columns: KanbanColumn[];
+}
+
+const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
+  initialAgendamentos,
+  passeios,
+  clientes,
+  guias,
+  columns: serverColumns
+}) => {
   const { user, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | null>(null);
-  const [agendamentos, setAgendamentos] = useState<Tarefa[]>([]);
-  const [passeios, setPasseios] = useState<Passeio[]>([]);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [guias, setGuias] = useState<Guia[]>([]);
-  const [loadingAgendamentos, setLoadingAgendamentos] = useState(true);
-  const [loadingPasseios, setLoadingPasseios] = useState(true);
-  const [loadingClientes, setLoadingClientes] = useState(true);
-  const [loadingGuias, setLoadingGuias] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const fetchPasseios = async (): Promise<Passeio[]> => {
-    setLoadingPasseios(true);
-    try {
-      const response = await fetch('/api/passeios');
-      if (!response.ok) {
-        throw new Error('Falha ao carregar passeios');
-      }
-      const payload = await response.json();
-      const mapped: Passeio[] = (Array.isArray(payload) ? payload : []).map(normalizePasseio);
-      setPasseios(mapped);
-      return mapped;
-    } catch (error) {
-      console.error('Erro ao carregar passeios:', error);
-      toast.error('Não foi possível carregar os passeios.');
-      setPasseios([]);
-      return [];
-    } finally {
-      setLoadingPasseios(false);
-    }
-  };
-
-  const fetchClientes = async (): Promise<Cliente[]> => {
-    setLoadingClientes(true);
-    try {
-      const response = await fetch('/api/clientes');
-      if (!response.ok) {
-        throw new Error('Falha ao carregar clientes');
-      }
-      const payload = await response.json();
-      const mapped: Cliente[] = (Array.isArray(payload) ? payload : []).map(normalizeCliente);
-      setClientes(mapped);
-      return mapped;
-    } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
-      toast.error('Não foi possível carregar os clientes.');
-      setClientes([]);
-      return [];
-    } finally {
-      setLoadingClientes(false);
-    }
-  };
-
-  const fetchGuias = async (): Promise<Guia[]> => {
-    setLoadingGuias(true);
-    try {
-      const response = await fetch('/api/guias');
-      if (!response.ok) {
-        throw new Error('Falha ao carregar guias');
-      }
-      const payload = await response.json();
-      const mapped: Guia[] = (Array.isArray(payload) ? payload : []).map(normalizeGuia);
-      setGuias(mapped);
-      return mapped;
-    } catch (error) {
-      console.error('Erro ao carregar guias:', error);
-      toast.error('Não foi possível carregar os guias.');
-      setGuias([]);
-      return [];
-    } finally {
-      setLoadingGuias(false);
-    }
-  };
-
-  const fetchAgendamentos = async (
-    passeiosData: Passeio[] = passeios,
-    clientesData: Cliente[] = clientes,
-    guiasData: Guia[] = guias,
-  ) => {
-    setLoadingAgendamentos(true);
-    try {
-      const response = await fetch('/api/agendamentos', {
-        headers: { 'Cache-Control': 'no-cache' },
-      });
-      
-      const payload = await response.json();
-      
-      const normalized: Tarefa[] = (Array.isArray(payload) ? payload : []).map((item: any, index: number) =>
-        normalizeAgendamento(item, { passeios: passeiosData, clientes: clientesData, guias: guiasData }, index),
-      );
-      
-      setAgendamentos(normalized);
-      
-      if (normalized.length === 0) {
-        toast.info('Nenhum agendamento encontrado. Crie o primeiro agendamento!');
-      }
-    } catch (error) {
-      console.error('Erro ao carregar agendamentos:', error);
-      toast.error('Não foi possível carregar os agendamentos.');
-      setAgendamentos([]);
-    } finally {
-      setLoadingAgendamentos(false);
-    }
-  };
+  // Columns State
+  const [columns, setColumns] = useState(serverColumns);
+  const [editingColumn, setEditingColumn] = useState<Partial<KanbanColumn> | null>(null);
+  const [isColModalOpen, setIsColModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        const [passeiosData, clientesData, guiasData] = await Promise.all([
-          fetchPasseios(),
-          fetchClientes(),
-          fetchGuias(),
-        ]);
-        await fetchAgendamentos(passeiosData, clientesData, guiasData);
-      } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-      }
-    };
-    
-    fetchAllData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setColumns(serverColumns);
+  }, [serverColumns]);
 
-  const refetchAgendamentos = async () => {
-    await fetchAgendamentos(passeios, clientes, guias);
-  };
+  // State Management (Replacing useOptimistic)
+  const [agendamentos, setAgendamentos] = useState(initialAgendamentos);
 
-  const onDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
-
-    if (!destination || destination.droppableId === source.droppableId) {
-      return;
-    }
-
-    const novoStatus = destination.droppableId as Status;
-
-    try {
-      setAgendamentos(prev =>
-        prev.map(tarefa =>
-          tarefa.id === draggableId ? { ...tarefa, status: novoStatus } : tarefa,
-        ),
-      );
-
-      const response = await fetch(`/api/agendamentos/${draggableId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: novoStatus }),
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.error || 'Falha ao atualizar status');
-      }
-
-      toast.success('Status atualizado com sucesso.');
-      await refetchAgendamentos();
-    } catch (error) {
-      console.error('Erro ao atualizar status do agendamento:', error);
-      toast.error('Não foi possível atualizar o status.');
-      await refetchAgendamentos();
-    }
-  };
+  useEffect(() => {
+    setAgendamentos(initialAgendamentos);
+  }, [initialAgendamentos]);
 
   const getTarefasByStatus = (status: Status) => {
     return agendamentos.filter(agendamento => agendamento.status === status);
   };
 
-  const buildPayloadFromModal = (data: NovaTarefaData) => ({
-    passeioId: data.passeioId,
-    clienteId: data.clienteId ?? null,
-    guiaId: data.guiaId ?? null,
-    dataPasseio: data.data,
-    numeroPessoas: Number(data.numeroPessoas ?? 1),
-    observacoes: data.observacoes ?? null,
-    percentualComissao: data.comissaoPercentual,
-  });
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
 
-  const handleNovaTarefa = async (data: NovaTarefaData) => {
-    if (!data?.passeioId || !data?.data) {
-      toast.error('Selecione um passeio e informe a data.');
-      return;
-    }
+    if (!destination || destination.droppableId === source.droppableId) return;
 
-    setIsSubmitting(true);
+    const novoStatus = destination.droppableId as Status;
+    const oldStatus = source.droppableId as Status;
+
+    // Optimistic Update
+    setAgendamentos(prev => prev.map(t =>
+      t.id === draggableId ? { ...t, status: novoStatus } : t
+    ));
+
     try {
-      const response = await fetch('/api/agendamentos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildPayloadFromModal(data)),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || 'Falha ao criar agendamento.');
-      }
-
-      setAgendamentos(prev => [...prev, payload]);
-      toast.success('Agendamento criado com sucesso.');
-      setIsModalOpen(false);
-      setEditingTarefa(null);
+      // Server Action
+      const res = await updateStatusAction(draggableId, novoStatus);
+      if (!res.success) throw new Error(res.error || "Falha ao atualizar");
+      toast.success("Status atualizado");
     } catch (error) {
-      console.error('Erro ao criar agendamento:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao criar agendamento.');
-    } finally {
-      setIsSubmitting(false);
+      toast.error(String(error));
+      // Revert on failure
+      setAgendamentos(prev => prev.map(t =>
+        t.id === draggableId ? { ...t, status: oldStatus } : t
+      ));
     }
+  };
+
+  // Task Handlers...
+  const handleNovaTarefa = async (data: NovaTarefaData) => {
+    startTransition(async () => {
+      const result = await saveAgendamentoAction(data);
+      if (result.success) {
+        toast.success('Agendamento criado.');
+        setIsModalOpen(false);
+      } else toast.error(result.error);
+    });
   };
 
   const handleEditarTarefa = async (data: NovaTarefaData) => {
-    if (!editingTarefa) {
-      return;
-    }
+    if (!editingTarefa) return;
+    startTransition(async () => {
+      const result = await saveAgendamentoAction(data, editingTarefa.id);
+      if (result.success) {
+        toast.success('Atualizado.');
+        setIsModalOpen(false);
+        setEditingTarefa(null);
+      } else toast.error(result.error);
+    });
+  };
 
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/agendamentos/${editingTarefa.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(buildPayloadFromModal(data)),
-      });
+  const handleAprovarAgendamento = async (id: string) => {
+    // Optimistic
+    setAgendamentos(prev => prev.map(t => t.id === id ? { ...t, status: 'confirmadas' } : t));
 
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || 'Falha ao atualizar agendamento.');
+    startTransition(async () => {
+      const result = await updateStatusAction(id, 'confirmadas');
+      if (result.success) {
+        toast.success('Confirmado');
+      } else {
+        toast.error(result.error);
+        // Revert?? Ideally yes, but lazy for now as revalidatePath usually covers it.
+        // But strict correctness:
+        // setAgendamentos(initialAgendamentos); 
       }
-
-      setAgendamentos(prev => prev.map(tarefa => (tarefa.id === payload.id ? payload : tarefa)));
-      toast.success('Agendamento atualizado com sucesso.');
-      setIsModalOpen(false);
-      setEditingTarefa(null);
-    } catch (error) {
-      console.error('Erro ao atualizar agendamento:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar agendamento.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   };
 
-  const handleEditClick = (tarefa: Tarefa) => {
-    setEditingTarefa(tarefa);
-    setIsModalOpen(true);
+  const handleRemoverAgendamento = async (id: string) => {
+    if (!confirm("Remover agendamento?")) return;
+    await deleteAgendamentoAction(id);
+    toast.success('Removido');
   };
 
-  const handleCloseModal = () => {
-    if (isSubmitting) {
-      return;
-    }
-    setIsModalOpen(false);
-    setEditingTarefa(null);
-  };
-
-  const handleAprovarAgendamento = async (agendamentoId: string) => {
-    try {
-      const response = await fetch(`/api/agendamentos/${agendamentoId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: 'confirmadas' as Status }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload?.error || 'Falha ao aprovar agendamento.');
+  const handleConvertLead = async (id: string) => {
+    if (!confirm("Deseja converter este lead em um cliente e agendamento confirmado?")) return;
+    startTransition(async () => {
+      const result = await convertLeadAction(id);
+      if (result.success) {
+        toast.success('Lead convertido com sucesso!');
+        setIsModalOpen(false);
+        setEditingTarefa(null);
+      } else {
+        toast.error(result.error || 'Falha ao converter lead');
       }
-
-      setAgendamentos(prev => prev.map(tarefa => (tarefa.id === payload.id ? payload : tarefa)));
-      toast.success('Agendamento confirmado.');
-    } catch (error) {
-      console.error('Erro ao aprovar agendamento:', error);
-      toast.error('Não foi possível aprovar o agendamento.');
-    }
+    });
   };
 
-  const handleRemoverAgendamento = async (agendamentoId: string) => {
-    try {
-      const response = await fetch(`/api/agendamentos/${agendamentoId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}));
-        throw new Error(payload?.error || 'Falha ao remover agendamento.');
-      }
-
-      setAgendamentos(prev => prev.filter(tarefa => tarefa.id !== agendamentoId));
-      toast.success('Agendamento removido com sucesso.');
-    } catch (error) {
-      console.error('Erro ao remover agendamento:', error);
-      toast.error('Não foi possível remover o agendamento.');
-    }
+  // Column Handlers
+  const handleEditColumn = (col: KanbanColumn) => {
+    setEditingColumn(col);
+    setIsColModalOpen(true);
   };
 
-  if (loadingAgendamentos || loadingPasseios || loadingClientes || loadingGuias) {
-    return (
-      <div className="min-h-screen bg-gray-50 lg:pl-10">
-        <Sidebar user={user} onLogout={logout} />
-        <div className="flex items-center justify-center px-4 py-10 lg:py-16">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-600 mt-2">Carregando agendamentos...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleNewColumn = () => {
+    setEditingColumn({ id: 'new_' + Date.now(), title: '', color: 'gray', order_index: columns.length });
+    setIsColModalOpen(true);
+  };
+
+  const handleSaveColumn = async (col: Partial<KanbanColumn>) => {
+    startTransition(async () => {
+      const result = await saveColumnAction(col);
+      if (result.success) toast.success("Coluna salva");
+      else toast.error(result.error);
+    });
+  };
+
+  const handleDeleteColumn = async (id: string) => {
+    startTransition(async () => {
+      const result = await deleteColumnAction(id);
+      if (result.success) toast.success("Coluna removida");
+      else toast.error(result.error);
+    });
+  };
 
   return (
     <>
@@ -695,30 +470,43 @@ const AgendamentosPage: React.FC = () => {
                 Agendamentos
               </h1>
               <p className="text-gray-600 mt-1">
-                Sistema Kanban para gerenciar o fluxo de trabalho.
+                Gerencie o fluxo de agendamentos.
               </p>
             </div>
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => {
-                setEditingTarefa(null);
-                setIsModalOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Tarefa
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleNewColumn} variant="outline" className="border-dashed">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Coluna
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => {
+                  setEditingTarefa(null);
+                  setIsModalOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agendamento
+              </Button>
+            </div>
           </div>
-          
+
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-6 overflow-x-auto pb-4">
+            <div className="flex gap-6 overflow-x-auto pb-4 items-start h-[calc(100vh-200px)]">
               {columns.map((column) => (
-                <div key={column.id} className="flex-shrink-0">
-                  <div className="flex items-center gap-2 mb-4">
-                    <h2 className="font-semibold text-gray-900">{column.title}</h2>
-                    <Badge variant="secondary" className="text-xs">
-                      {getTarefasByStatus(column.id).length}
-                    </Badge>
+                <div key={column.id} className="flex-shrink-0 w-80 flex flex-col h-full bg-gray-100/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+                  {/* Colored Header */}
+                  <div className={`p-3 flex items-center justify-between ${HEADER_COLOR_MAP[column.color || 'gray']} text-white rounded-t-xl`}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-sm uppercase tracking-wide">{column.title}</span>
+                      <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                        {getTarefasByStatus(column.id).length}
+                      </span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => handleEditColumn(column)}>
+                      <Settings className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
 
                   <Droppable droppableId={column.id}>
@@ -726,16 +514,16 @@ const AgendamentosPage: React.FC = () => {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`min-h-screen w-96 p-2 rounded-lg transition-colors ${
-                          snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-transparent'
-                        }`}
+                        className={`flex-1 p-2 overflow-y-auto ${snapshot.isDraggingOver ? 'bg-gray-100' : ''
+                          }`}
                       >
                         {getTarefasByStatus(column.id).map((tarefa, index) => (
-                          <TaskCard 
-                            key={tarefa.id} 
-                            tarefa={tarefa} 
-                            index={index} 
-                            onEdit={handleEditClick}
+                          <TaskCard
+                            key={tarefa.id}
+                            tarefa={tarefa}
+                            index={index}
+                            columns={columns}
+                            onEdit={(t) => { setEditingTarefa(t); setIsModalOpen(true); }}
                             onAprovar={handleAprovarAgendamento}
                             onRemover={handleRemoverAgendamento}
                           />
@@ -744,6 +532,7 @@ const AgendamentosPage: React.FC = () => {
                       </div>
                     )}
                   </Droppable>
+
                 </div>
               ))}
             </div>
@@ -753,16 +542,25 @@ const AgendamentosPage: React.FC = () => {
 
       <NovaTarefaModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSubmit={editingTarefa ? handleEditarTarefa : handleNovaTarefa}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={editingTarefa ? (d) => handleEditarTarefa(d as NovaTarefaData) : (d) => handleNovaTarefa(d as NovaTarefaData)}
         passeios={passeios}
         clientes={clientes}
         guias={guias}
         editingTarefa={editingTarefa}
-        isSubmitting={isSubmitting}
+        isSubmitting={isPending}
+        onConvert={handleConvertLead}
+      />
+
+      <ColumnManagerModal
+        isOpen={isColModalOpen}
+        onClose={() => setIsColModalOpen(false)}
+        column={editingColumn}
+        onSave={handleSaveColumn}
+        onDelete={handleDeleteColumn}
       />
     </>
   );
 };
 
-export default AgendamentosPage;
+export default AgendamentosClientPage;

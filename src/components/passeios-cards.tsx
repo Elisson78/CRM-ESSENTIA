@@ -48,29 +48,29 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       try {
         console.log('🔄 Carregando passeios da API...');
         const response = await fetch('/api/passeios');
-        
+
         console.log('📡 Status da resposta:', response.status);
-        
+
         if (response.ok) {
           let data = await response.json();
           console.log('✅ Dados recebidos:', data.length, 'passeios');
-          
+
           // Filtrar apenas passeios ativos (aceitar 1, true ou valores truthy)
           data = data.filter((passeio: Passeio) => Boolean(passeio.ativo));
-          
+
           console.log('✅ Passeios ativos:', data.length);
-          
+
           // Limitar quantidade se especificado
           if (limite) {
             data = data.slice(0, limite);
           }
-          
+
           // Se não houver dados, usar fallback
           if (data.length === 0) {
             console.warn('⚠️ Nenhum passeio encontrado no banco. Usando dados de demonstração.');
             data = getDadosFallback();
           }
-          
+
           setPasseios(data);
         } else {
           const errorData = await response.json().catch(() => ({}));
@@ -185,9 +185,8 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
   }
 
   return (
-    <div className={`grid gap-6 ${
-      destaque ? 'md:grid-cols-1 lg:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'
-    }`}>
+    <div className={`grid gap-6 ${destaque ? 'md:grid-cols-1 lg:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'
+      }`}>
       {passeios.map((passeio, index) => (
         <motion.div
           key={passeio.id}
@@ -195,7 +194,6 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: index * 0.15, type: "spring", stiffness: 100 }}
-          whileHover={{ scale: 1.05, y: -8 }}
           className="transform transition-all duration-300"
         >
           <Card className="h-full hover:shadow-2xl transition-all duration-300 overflow-hidden border-2 hover:border-orange-300 shadow-lg hover:shadow-orange-200/50">
@@ -203,7 +201,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
               {/* Imagem do passeio */}
               <div className="relative h-48 overflow-hidden">
                 <div className="absolute top-4 left-4 z-10 flex gap-2">
-                  <Badge className="bg-blue-600 text-white shadow-lg animate-pulse">
+                  <Badge className="bg-blue-600 text-white shadow-lg">
                     {passeio.categoria}
                   </Badge>
                   <Badge variant="secondary" className="bg-green-600 text-white shadow-lg">
@@ -211,102 +209,53 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
                   </Badge>
                 </div>
                 <div className="absolute top-4 right-4 z-10">
-                  <Badge variant="secondary" className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg animate-bounce">
+                  <Badge variant="secondary" className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
                     🔥 Até 15% OFF
                   </Badge>
                 </div>
                 {(() => {
-                  // Parse imagens do passeio - parsing robusto
+                  // Lógica simplificada idêntica à página de detalhes (page.tsx)
+                  // O backend já deve garantir que passeio.imagens é um array de strings
                   const rawImagens = passeio.imagens;
-                  let imagensArray: string[] = [];
+                  let primeiraImagem: string | null = null;
 
-                  if (rawImagens) {
-                    try {
-                      if (Array.isArray(rawImagens)) {
-                        imagensArray = rawImagens
-                          .filter((item): item is string => typeof item === 'string')
-                          .map((item) => item.trim())
-                          .filter((item) => item.length > 0);
-                      } else if (typeof rawImagens === 'string') {
-                        const trimmed = rawImagens.trim();
-                        if (trimmed) {
-                          try {
-                            const parsed = JSON.parse(trimmed);
-                            if (Array.isArray(parsed)) {
-                              imagensArray = parsed
-                                .filter((item): item is string => typeof item === 'string')
-                                .map((item) => item.trim())
-                                .filter((item) => item.length > 0);
-                            } else if (typeof parsed === 'string') {
-                              imagensArray = [parsed];
-                            }
-                          } catch {
-                            if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-                              imagensArray = trimmed
-                                .replace(/^[\[\s]+|[\]\s]+$/g, '')
-                                .split(',')
-                                .map((item) => item.replace(/^"|"$/g, '').trim())
-                                .filter((item) => Boolean(item));
-                            } else {
-                              imagensArray = [trimmed];
-                            }
-                          }
-                        }
-                      } else if (typeof rawImagens === 'object') {
-                        const serialized = JSON.stringify(rawImagens);
-                        const parsed = JSON.parse(serialized);
-                        if (Array.isArray(parsed)) {
-                          imagensArray = parsed
-                            .filter((item): item is string => typeof item === 'string')
-                            .map((item) => item.trim())
-                            .filter((item) => item.length > 0);
-                        }
-                      }
-                    } catch {
-                      if (typeof rawImagens === 'string' && rawImagens.trim()) {
-                        imagensArray = [rawImagens.trim()];
-                      } else {
-                        imagensArray = [];
-                      }
+                  if (Array.isArray(rawImagens) && rawImagens.length > 0) {
+                    primeiraImagem = rawImagens[0];
+                  } else if (typeof rawImagens === 'string' && rawImagens.trim().length > 0) {
+                    // Caso raro onde o backend retorne string crua
+                    const trimmed = rawImagens.trim();
+                    if (trimmed.startsWith('[')) {
+                      try {
+                        const parsed = JSON.parse(trimmed);
+                        if (Array.isArray(parsed) && parsed.length > 0) primeiraImagem = parsed[0];
+                      } catch (e) { primeiraImagem = trimmed; }
+                    } else {
+                      primeiraImagem = trimmed;
                     }
                   }
 
-                  const primeiraImagem = imagensArray.length > 0 ? imagensArray[0] : null;
-                  const emoji = emojisPorCategoria[passeio.categoria] || "🏛️";
+                  if (primeiraImagem) {
+                    primeiraImagem = primeiraImagem.replace(/^"|"$/g, '');
+                  }
 
-                  // Se houver imagem do Supabase, exibir
-                  if (primeiraImagem && (primeiraImagem.includes('supabase.co') || primeiraImagem.startsWith('http'))) {
+                  if (primeiraImagem) {
                     return (
-                      <div className="w-full h-full relative overflow-hidden">
-                        <Image
+                      <div className="w-full h-full relative overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <img
                           src={primeiraImagem}
                           alt={passeio.nome}
-                          fill
-                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          className="object-cover transition-transform duration-300 hover:scale-110"
+                          className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                           onError={(e) => {
-                            // Fallback para emoji se a imagem falhar
-                            const target = e.currentTarget;
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `
-                                <div class="w-full h-full bg-gradient-to-br from-blue-600 via-purple-600 to-orange-500 flex items-center justify-center relative overflow-hidden">
-                                  <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
-                                  <span class="text-6xl drop-shadow-2xl relative z-10">${emoji}</span>
-                                </div>
-                              `;
-                            }
+                            e.currentTarget.style.display = 'none';
                           }}
                         />
                       </div>
                     );
                   }
 
-                  // Fallback para emoji se não houver imagem
                   return (
-                    <div className="w-full h-full bg-gradient-to-br from-blue-600 via-purple-600 to-orange-500 flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
-                      <span className="text-6xl drop-shadow-2xl relative z-10">{emoji}</span>
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-300 text-sm">Sem imagem</span>
                     </div>
                   );
                 })()}
@@ -350,20 +299,20 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
                     <Euro className="w-4 h-4 text-green-600" />
                     <div className="flex flex-col">
                       <span className="text-sm text-gray-500 line-through">
-                        R$ {(passeio.preco * 1.15).toFixed(2)}
+                        R$ {Number(passeio.preco * 1.15).toFixed(2)}
                       </span>
                       <span className="text-lg font-bold text-green-600">
-                        R$ {passeio.preco.toFixed(2)}
+                        R$ {Number(passeio.preco).toFixed(2)}
                       </span>
                     </div>
                   </div>
-                  
+
                   <Link href={`/passeio/${passeio.id}`}>
-                    <Button 
+                    <Button
                       className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-semibold"
                       size="sm"
                     >
-                      Ver Detalhes 
+                      Ver Detalhes
                     </Button>
                   </Link>
                 </div>

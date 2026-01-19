@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,7 +65,7 @@ export const AdminSidebar: React.FC = () => {
               const isActive = pathname === item.href;
 
               return (
-                <a
+                <Link
                   key={item.label}
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -75,7 +76,7 @@ export const AdminSidebar: React.FC = () => {
                 >
                   <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-blue-700' : 'text-gray-500'}`} />
                   <span className="truncate">{item.label}</span>
-                </a>
+                </Link>
               );
             })}
           </nav>

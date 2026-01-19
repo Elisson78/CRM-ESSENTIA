@@ -1,17 +1,23 @@
 export const dynamic = "force-dynamic";
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
 
 const ensureArray = (value: unknown): string[] => {
   if (!value && value !== 0) return [];
-  if (Array.isArray(value)) return value.filter(i => typeof i === 'string');
+  // Handle already parsed arrays (pg driver behavior for jsonb)
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string').map(i => i.trim()).filter(Boolean);
+  }
+  // Handle stringified JSON
   if (typeof value === 'string') {
     try {
       const parsed = JSON.parse(value);
-      if (Array.isArray(parsed)) return parsed;
-      return [value];
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === 'string').map(i => i.trim()).filter(Boolean);
+      }
+      return [value.trim()].filter(Boolean);
     } catch {
-      return [value];
+      return [value.trim()].filter(Boolean);
     }
   }
   return [];
@@ -23,11 +29,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    console.log('🔍 Buscando passeio no banco via Prisma:', id);
+    console.log('🔍 Buscando passeio no banco via SQL:', id);
 
-    const passeio = await prisma.passeio.findUnique({
-      where: { id }
-    });
+    const result = await db.query('SELECT * FROM passeios WHERE id = $1', [id]);
+    const passeio = result.rows[0];
 
     if (!passeio) {
       console.log('❌ Passeio não encontrado:', id);
@@ -35,10 +40,20 @@ export async function GET(
     }
 
     const passeioFormatado = {
-      ...passeio,
+      id: passeio.id,
+      nome: passeio.nome,
+      descricao: passeio.descricao,
+      preco: passeio.preco,
+      duracao: passeio.duracao,
+      categoria: passeio.categoria,
       imagens: ensureArray(passeio.imagens),
+      images: ensureArray(passeio.imagens), // Alias
       inclusoes: ensureArray(passeio.inclusoes),
       idiomas: ensureArray(passeio.idiomas),
+      capacidadeMaxima: passeio.capacidade_maxima,
+      ativo: passeio.ativo,
+      criadoEm: passeio.criado_em,
+      atualizadoEm: passeio.atualizado_em
     };
 
     return NextResponse.json(passeioFormatado);
@@ -56,30 +71,58 @@ export async function PUT(
     const { id } = await params;
     const passeioData = await request.json();
 
-    console.log('🔄 Atualizando passeio via Prisma:', id);
+    console.log('🔄 Atualizando passeio via SQL:', id);
 
-    const data: any = {
-      nome: passeioData.name || passeioData.nome,
-      descricao: passeioData.description || passeioData.descricao || "Descrição não informada",
-      preco: parseFloat(passeioData.price || passeioData.preco) || 0,
-      duracao: passeioData.duration ? `${passeioData.duration}h` : (passeioData.duracao || ""),
-      categoria: passeioData.type || passeioData.categoria || "Geral",
-      imagens: passeioData.images || [],
-      inclusoes: passeioData.includedItems || [],
-      idiomas: passeioData.languages || [],
-      capacidadeMaxima: parseInt(passeioData.maxPeople) || 20,
-      ativo: (passeioData.status === 'Ativo' || passeioData.ativo === 1) ? 1 : 0,
-      updatedAt: new Date()
+    const updateFields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    // Helper to add field
+    const addField = (col: string, val: any) => {
+      updateFields.push(`${col} = $${paramIndex++}`);
+      values.push(val);
     };
 
-    const updatedPasseio = await prisma.passeio.update({
-      where: { id },
-      data
-    });
+    // Mapping logic
+    if (passeioData.name || passeioData.nome) addField('nome', passeioData.name || passeioData.nome);
+    if (passeioData.description || passeioData.descricao) addField('descricao', passeioData.description || passeioData.descricao);
+    if (passeioData.price || passeioData.preco) addField('preco', parseFloat(passeioData.price || passeioData.preco) || 0);
+    if (passeioData.duration || passeioData.duracao) addField('duracao', passeioData.duration ? `${passeioData.duration}h` : (passeioData.duracao || ""));
+    if (passeioData.type || passeioData.categoria) addField('categoria', passeioData.type || passeioData.categoria);
+    if (passeioData.images || passeioData.imagens) addField('imagens', JSON.stringify(passeioData.images || passeioData.imagens || []));
+    if (passeioData.includedItems || passeioData.inclusoes) addField('inclusoes', JSON.stringify(passeioData.includedItems || passeioData.inclusoes || []));
+    if (passeioData.languages || passeioData.idiomas) addField('idiomas', JSON.stringify(passeioData.languages || passeioData.idiomas || []));
+    if (passeioData.maxPeople || passeioData.capacidadeMaxima) addField('capacidade_maxima', parseInt(passeioData.maxPeople || passeioData.capacidadeMaxima) || 20);
+
+    // Status check
+    const isActive = (passeioData.status === 'Ativo' || passeioData.ativo === 1 || passeioData.ativo === true) ? 1 : 0;
+    // Only update active if explicitly provided or implied by status string
+    if (passeioData.status !== undefined || passeioData.ativo !== undefined) {
+      addField('ativo', isActive);
+    }
+
+    updateFields.push(`atualizado_em = NOW()`);
+
+    if (updateFields.length === 0) {
+      return NextResponse.json({ message: "Nada a atualizar" });
+    }
+
+    values.push(id);
+    const query = `UPDATE passeios SET ${updateFields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
+
+    const result = await db.query(query, values);
+    const updatedPasseio = result.rows[0];
+
+    if (!updatedPasseio) {
+      return NextResponse.json({ error: 'Passeio não encontrado' }, { status: 404 });
+    }
 
     return NextResponse.json({
       message: 'Passeio atualizado com sucesso',
-      passeio: updatedPasseio
+      passeio: {
+        ...updatedPasseio,
+        capacidadeMaxima: updatedPasseio.capacidade_maxima
+      }
     });
   } catch (error) {
     console.error('❌ Erro ao atualizar passeio:', error);
@@ -93,11 +136,13 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    console.log('🗑️ Excluindo passeio via Prisma:', id);
+    console.log('🗑️ Excluindo passeio via SQL:', id);
 
-    await prisma.passeio.delete({
-      where: { id }
-    });
+    const result = await db.query('DELETE FROM passeios WHERE id = $1', [id]);
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Passeio não encontrado' }, { status: 404 });
+    }
 
     return NextResponse.json({ message: 'Passeio excluído com sucesso' });
   } catch (error) {
