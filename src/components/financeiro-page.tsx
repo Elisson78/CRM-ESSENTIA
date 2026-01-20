@@ -254,8 +254,8 @@ const FinancialMetricCard: React.FC<{ metric: FinancialMetric; index: number }> 
               )}
               {metric.subtitle && (
                 <span className={`text-xs font-medium ${metric.subtitle.includes("agendamentos")
-                    ? "text-orange-600"
-                    : "text-purple-600"
+                  ? "text-orange-600"
+                  : "text-purple-600"
                   }`}>
                   {metric.subtitle}
                 </span>
@@ -269,69 +269,6 @@ const FinancialMetricCard: React.FC<{ metric: FinancialMetric; index: number }> 
       </CardContent>
     </Card>
   </motion.div>
-);
-
-const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user, onLogout }) => (
-  <div className="hidden lg:block w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0">
-    <div className="p-6">
-      <div className="flex items-center gap-2 mb-8">
-        <div className="p-2 bg-blue-600 rounded-lg">
-          <MapPin className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="font-bold text-lg text-gray-900">TourGuide CRM</h1>
-          <p className="text-sm text-gray-600">Administrador</p>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-          NAVEGAÇÃO
-        </h3>
-        <nav className="space-y-2">
-          {[
-            { icon: Home, label: "Dashboard", href: "/admin" },
-            { icon: Calendar, label: "Agendamentos", href: "/admin/agendamentos" },
-            { icon: CalendarDays, label: "Calendário Global", href: "/admin/calendario" },
-            { icon: Users, label: "Guias", href: "/admin/guias" },
-            { icon: Heart, label: "Clientes", href: "/admin/clientes" },
-            { icon: MapPin, label: "Passeios", href: "/admin/passeios" },
-            { icon: DollarSign, label: "Financeiro", href: "/admin/financeiro", active: true },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
-                  ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                  : "text-gray-700 hover:bg-gray-50"
-                }`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </div>
-
-      <div className="absolute bottom-6 left-6 right-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nome?.charAt(0)?.toUpperCase() || 'A'}
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{user?.nome || 'Administrador'}</p>
-            <p className="text-xs text-gray-600">{user?.email || 'admin@turguide.com'}</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={onLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
-      </div>
-    </div>
-  </div>
 );
 
 const FinanceiroPage: React.FC = () => {
@@ -352,127 +289,121 @@ const FinanceiroPage: React.FC = () => {
   });
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar user={user} onLogout={logout} />
+    <div className="p-4 lg:p-6">
+      {/* Cabeçalho da página */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+            Gestão Financeira
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Controle completo de receitas, comissões e pagamentos.
+          </p>
+        </div>
+        <Button className="bg-green-600 hover:bg-green-700 text-white text-sm" size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Exportar Relatório
+        </Button>
+      </div>
 
-      <div className="flex-1 lg:ml-64 ml-0">
-        <div className="p-4 lg:p-6">
-          {/* Cabeçalho da página */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Gestão Financeira
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Controle completo de receitas, comissões e pagamentos.
-              </p>
-            </div>
-            <Button className="bg-green-600 hover:bg-green-700 text-white text-sm" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Relatório
+      {/* Cards de métricas financeiras */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        {financialMetrics.map((metric, index) => (
+          <FinancialMetricCard key={index} metric={metric} index={index} />
+        ))}
+      </div>
+
+      {/* Filtros e busca */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Buscar por cliente ou passeio..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <div className="relative">
+            <Button variant="outline" className="flex items-center gap-2">
+              {statusFilter}
+              <ChevronDown className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Cards de métricas financeiras */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            {financialMetrics.map((metric, index) => (
-              <FinancialMetricCard key={index} metric={metric} index={index} />
-            ))}
+          <div className="relative">
+            <Button variant="outline" className="flex items-center gap-2">
+              {monthFilter}
+              <ChevronDown className="h-4 w-4" />
+            </Button>
           </div>
-
-          {/* Filtros e busca */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar por cliente ou passeio..."
-                className="pl-9"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <div className="relative">
-                <Button variant="outline" className="flex items-center gap-2">
-                  {statusFilter}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="relative">
-                <Button variant="outline" className="flex items-center gap-2">
-                  {monthFilter}
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Transações Financeiras</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-200 bg-gray-50">
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Data</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Cliente</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Passeio</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Guia</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Valor Total</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Comissão</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Status</th>
-                        <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Pagamento</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredTransactions.map((transaction, index) => (
-                        <motion.tr
-                          key={transaction.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="py-2.5 px-4 text-gray-900">{transaction.data}</td>
-                          <td className="py-2.5 px-4 text-gray-900">{transaction.cliente}</td>
-                          <td className="py-2.5 px-4 text-gray-900">{transaction.passeio}</td>
-                          <td className="py-2.5 px-4 text-gray-600">{transaction.guia}</td>
-                          <td className="py-2.5 px-4">
-                            <span className="font-medium text-green-600 text-sm">
-                              {formatCurrency(transaction.valorTotal)}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-4">
-                            <span className={`font-medium text-sm ${transaction.comissao === 0 ? 'text-red-600' : 'text-purple-600'
-                              }`}>
-                              {formatCurrency(transaction.comissao)}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-4">
-                            {getStatusBadge(transaction.status)}
-                          </td>
-                          <td className="py-2.5 px-4">
-                            {getPagamentoBadge(transaction.pagamento)}
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
         </div>
       </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Transações Financeiras</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Data</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Cliente</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Passeio</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Guia</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Valor Total</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Comissão</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Status</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Pagamento</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((transaction, index) => (
+                    <motion.tr
+                      key={transaction.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-2.5 px-4 text-gray-900">{transaction.data}</td>
+                      <td className="py-2.5 px-4 text-gray-900">{transaction.cliente}</td>
+                      <td className="py-2.5 px-4 text-gray-900">{transaction.passeio}</td>
+                      <td className="py-2.5 px-4 text-gray-600">{transaction.guia}</td>
+                      <td className="py-2.5 px-4">
+                        <span className="font-medium text-green-600 text-sm">
+                          {formatCurrency(transaction.valorTotal)}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <span className={`font-medium text-sm ${transaction.comissao === 0 ? 'text-red-600' : 'text-purple-600'
+                          }`}>
+                          {formatCurrency(transaction.comissao)}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        {getStatusBadge(transaction.status)}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        {getPagamentoBadge(transaction.pagamento)}
+                      </td>
+                    </motion.tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 };

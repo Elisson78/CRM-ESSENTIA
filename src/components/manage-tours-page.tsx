@@ -21,7 +21,6 @@ import {
   Heart,
   LogOut, Image as ImageIcon,
 } from "lucide-react";
-import AdminMobileNav from "./admin-mobile-nav";
 import AddTourModal from "./add-tour-modal";
 
 interface Tour {
@@ -114,67 +113,6 @@ const mockTours: Tour[] = [
     type: "Gastronômico",
   },
 ];
-
-const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user, onLogout }) => (
-  <div className="hidden lg:block w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0">
-    <div className="p-6">
-      <div className="flex items-center gap-2 mb-8">
-        <div className="p-2 bg-blue-600 rounded-lg">
-          <MapPin className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="font-bold text-lg text-gray-900">TourGuide CRM</h1>
-          <p className="text-sm text-gray-600">Administrador</p>
-        </div>
-      </div>
-      <div className="mb-8">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-          Navegação
-        </h3>
-        <nav className="space-y-2">
-          {[
-            { icon: Home, label: "Dashboard", href: "/admin" },
-            { icon: Calendar, label: "Agendamentos", href: "/admin/agendamentos" },
-            { icon: CalendarDays, label: "Calendário Global", href: "/admin/calendario" },
-            { icon: Users, label: "Guias", href: "/admin/guias" },
-            { icon: Heart, label: "Clientes", href: "/admin/clientes" },
-            { icon: MapPin, label: "Passeios", href: "/admin/passeios", active: true },
-            { icon: DollarSign, label: "Financeiro", href: "/admin/financeiro" },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
-                ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                : "text-gray-700 hover:bg-gray-50"
-                }`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </div>
-      <div className="absolute bottom-6 left-6 right-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nome?.charAt(0)?.toUpperCase() || "A"}
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{user?.nome || "Administrador"}</p>
-            <p className="text-xs text-gray-600">{user?.email || "admin@turguide.com"}</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={onLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
-      </div>
-    </div>
-  </div>
-);
 
 const ActionDropdown: React.FC<{ tour: Tour; onEditTour: (id: string) => void; onDeleteTour: (id: string) => void }> = ({ tour, onEditTour, onDeleteTour }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -426,120 +364,108 @@ const ManageToursPage: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <AdminMobileNav
-        userName={user?.nome || "Administrador"}
-        userEmail={user?.email || "admin@turguide.com"}
-        onLogout={logout}
-      />
-      <Sidebar user={user} onLogout={logout} />
-      <div className="flex-1 lg:ml-64 ml-0">
-        <div className="p-4 lg:p-6">
-          <div className="mb-8">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-              Gerenciar Passeios
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Adicione, edite e organize todos os passeios oferecidos.
-            </p>
-          </div>
-          <div className="flex justify-end mb-6">
-            <Button onClick={() => setIsAddTourModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Passeio
-            </Button>
-          </div>
-          <Card>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Carregando passeios...</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Passeio
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Local
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Preço
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Duração
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Ações
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {tours.map((tour) => (
-                        <tr key={tour.id}>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-4">
-                              <div className="h-12 w-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                {tour.images && tour.images.length > 0 ? (
-                                  <img
-                                    src={tour.images[0]}
-                                    alt={tour.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <ImageIcon className="h-5 w-5 text-gray-400" />
-                                )}
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900">{tour.name}</p>
-                                <p className="text-sm text-gray-500">{tour.type}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-gray-600">{tour.location}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-gray-900 font-medium">
-                              R$ {Number(tour.price || 0).toFixed(2)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-gray-600">{tour.duration}h</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <Badge
-                              className={
-                                tour.status === "Ativo"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-gray-100 text-gray-600"
-                              }
-                            >
-                              {tour.status}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <td className="px-6 py-4 text-right">
-                              <ActionDropdown tour={tour} onEditTour={handleEditTour} onDeleteTour={handleDeleteTour} />
-                            </td>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+    <div className="p-4 lg:p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+          Gerenciar Passeios
+        </h1>
+        <p className="text-gray-600 mt-2">
+          Adicione, edite e organize todos os passeios oferecidos.
+        </p>
       </div>
+      <div className="flex justify-end mb-6">
+        <Button onClick={() => setIsAddTourModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Passeio
+        </Button>
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Carregando passeios...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Passeio
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Local
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Preço
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duração
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {tours.map((tour) => (
+                    <tr key={tour.id}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                            {tour.images && tour.images.length > 0 ? (
+                              <img
+                                src={tour.images[0]}
+                                alt={tour.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{tour.name}</p>
+                            <p className="text-sm text-gray-500">{tour.type}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-gray-600">{tour.location}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-gray-900 font-medium">
+                          R$ {Number(tour.price || 0).toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-gray-600">{tour.duration}h</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge
+                          className={
+                            tour.status === "Ativo"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-600"
+                          }
+                        >
+                          {tour.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <ActionDropdown tour={tour} onEditTour={handleEditTour} onDeleteTour={handleDeleteTour} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
       <AddTourModal
         key="add"
         isOpen={isAddTourModalOpen}

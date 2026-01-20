@@ -68,70 +68,6 @@ const getStatusColor = (status: string, columns: KanbanColumn[]) => {
   return map[colorKey] || map.gray;
 };
 
-// Sidebar (Simplified)
-const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user, onLogout }) => (
-  <div className="hidden lg:block w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 z-20">
-    <div className="p-6">
-      <div className="flex items-center gap-2 mb-8">
-        <div className="p-2 bg-blue-600 rounded-lg">
-          <MapPin className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="font-bold text-lg text-gray-900">TourGuide CRM</h1>
-          <p className="text-sm text-gray-600">Administrador</p>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-          NAVEGAÇÃO
-        </h3>
-        <nav className="space-y-2">
-          {[
-            { icon: Home, label: "Dashboard", href: "/admin" },
-            { icon: Calendar, label: "Agendamentos", href: "/admin/agendamentos", active: true },
-            { icon: CalendarDays, label: "Calendário Global", href: "/admin/calendario" },
-            { icon: Users, label: "Guias", href: "/admin/guias" },
-            { icon: Heart, label: "Clientes", href: "/admin/clientes" },
-            { icon: MapPin, label: "Passeios", href: "/admin/passeios" },
-            { icon: DollarSign, label: "Financeiro", href: "/admin/financeiro" },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
-                ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                : "text-gray-700 hover:bg-gray-50"
-                }`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </div>
-
-      <div className="absolute bottom-6 left-6 right-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nome?.charAt(0)?.toUpperCase() || 'A'}
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{user?.nome || 'Administrador'}</p>
-            <p className="text-xs text-gray-600">{user?.email || 'admin@turguide.com'}</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={onLogout}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
-      </div>
-    </div>
-  </div>
-);
-
 const TaskCard: React.FC<{
   tarefa: Tarefa;
   index: number;
@@ -404,9 +340,7 @@ const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
         toast.success('Confirmado');
       } else {
         toast.error(result.error);
-        // Revert?? Ideally yes, but lazy for now as revalidatePath usually covers it.
-        // But strict correctness:
-        // setAgendamentos(initialAgendamentos); 
+        // Revert?? Ideally yes, but revalidatePath usually covers it.
       }
     });
   };
@@ -459,86 +393,80 @@ const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
   };
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50">
-        <Sidebar user={user} onLogout={logout} />
-
-        <div className="flex-1 lg:ml-64 ml-0 p-4 lg:p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-                Agendamentos
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Gerencie o fluxo de agendamentos.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleNewColumn} variant="outline" className="border-dashed">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Coluna
-              </Button>
-              <Button
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => {
-                  setEditingTarefa(null);
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Agendamento
-              </Button>
-            </div>
-          </div>
-
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-6 overflow-x-auto pb-4 items-start h-[calc(100vh-200px)]">
-              {columns.map((column) => (
-                <div key={column.id} className="flex-shrink-0 w-80 flex flex-col h-full bg-gray-100/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-
-                  {/* Colored Header */}
-                  <div className={`p-3 flex items-center justify-between ${HEADER_COLOR_MAP[column.color || 'gray']} text-white rounded-t-xl`}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm uppercase tracking-wide">{column.title}</span>
-                      <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                        {getTarefasByStatus(column.id).length}
-                      </span>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => handleEditColumn(column)}>
-                      <Settings className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-
-                  <Droppable droppableId={column.id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`flex-1 p-2 overflow-y-auto ${snapshot.isDraggingOver ? 'bg-gray-100' : ''
-                          }`}
-                      >
-                        {getTarefasByStatus(column.id).map((tarefa, index) => (
-                          <TaskCard
-                            key={tarefa.id}
-                            tarefa={tarefa}
-                            index={index}
-                            columns={columns}
-                            onEdit={(t) => { setEditingTarefa(t); setIsModalOpen(true); }}
-                            onAprovar={handleAprovarAgendamento}
-                            onRemover={handleRemoverAgendamento}
-                          />
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-
-                </div>
-              ))}
-            </div>
-          </DragDropContext>
+    <div className="p-4 lg:p-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            Agendamentos
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Gerencie o fluxo de agendamentos.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleNewColumn} variant="outline" className="border-dashed">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Coluna
+          </Button>
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => {
+              setEditingTarefa(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Agendamento
+          </Button>
         </div>
       </div>
+
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex gap-6 overflow-x-auto pb-4 items-start h-[calc(100vh-200px)]">
+          {columns.map((column) => (
+            <div key={column.id} className="flex-shrink-0 w-80 flex flex-col h-full bg-gray-100/50 rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+              {/* Colored Header */}
+              <div className={`p-3 flex items-center justify-between ${HEADER_COLOR_MAP[column.color || 'gray']} text-white rounded-t-xl`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm uppercase tracking-wide">{column.title}</span>
+                  <span className="bg-white/20 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                    {getTarefasByStatus(column.id).length}
+                  </span>
+                </div>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-white hover:bg-white/20" onClick={() => handleEditColumn(column)}>
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              <Droppable droppableId={column.id}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`flex-1 p-2 overflow-y-auto ${snapshot.isDraggingOver ? 'bg-gray-100' : ''
+                      }`}
+                  >
+                    {getTarefasByStatus(column.id).map((tarefa, index) => (
+                      <TaskCard
+                        key={tarefa.id}
+                        tarefa={tarefa}
+                        index={index}
+                        columns={columns}
+                        onEdit={(t) => { setEditingTarefa(t); setIsModalOpen(true); }}
+                        onAprovar={handleAprovarAgendamento}
+                        onRemover={handleRemoverAgendamento}
+                      />
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+
+            </div>
+          ))}
+        </div>
+      </DragDropContext>
 
       <NovaTarefaModal
         isOpen={isModalOpen}
@@ -559,7 +487,7 @@ const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
         onSave={handleSaveColumn}
         onDelete={handleDeleteColumn}
       />
-    </>
+    </div>
   );
 };
 

@@ -17,15 +17,8 @@ import {
   MapPin,
   ChevronRight,
   TrendingUp,
-  User,
-  LogOut,
-  Home,
-  CalendarDays,
-  MapPin as MapPinIcon,
-  DollarSign as DollarSignIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import AdminMobileNav from "./admin-mobile-nav";
 import AddTourModal from "./add-tour-modal";
 
 // Tipos para os dados
@@ -158,19 +151,18 @@ const quickActions: QuickAction[] = [
   },
   {
     title: "Cadastrar Passeio",
-    icon: <MapPinIcon className="h-4 w-4" />,
+    icon: <MapPin className="h-4 w-4" />,
     color: "bg-gray-500 hover:bg-gray-600",
     href: "/passeios/novo",
   },
   {
     title: "Relatório Financeiro",
-    icon: <DollarSignIcon className="h-4 w-4" />,
+    icon: <DollarSign className="h-4 w-4" />,
     color: "bg-green-500 hover:bg-green-600",
     href: "/admin/financeiro",
   },
 ];
 
-// Componente do card de métrica
 const MetricCard: React.FC<{ metric: MetricCard }> = ({ metric }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
@@ -197,75 +189,6 @@ const MetricCard: React.FC<{ metric: MetricCard }> = ({ metric }) => (
   </motion.div>
 );
 
-// Componente da barra lateral
-const Sidebar: React.FC<{ onLogout: () => Promise<void>; user: any }> = ({ onLogout, user }) => (
-  <div className="hidden lg:block w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0">
-    <div className="p-6">
-      {/* Logo */}
-      <div className="flex items-center gap-2 mb-8">
-        <div className="p-2 bg-blue-600 rounded-lg">
-          <MapPin className="h-6 w-6 text-white" />
-        </div>
-        <div>
-          <h1 className="font-bold text-lg text-gray-900">TourGuide CRM</h1>
-          <p className="text-sm text-gray-600">Administrador</p>
-        </div>
-      </div>
-
-      {/* Navegação */}
-      <div className="mb-8">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-          Navegação
-        </h3>
-        <nav className="space-y-2">
-          {[
-            { icon: Home, label: "Dashboard", active: true, href: "/admin" },
-            { icon: Calendar, label: "Agendamentos", href: "/admin/agendamentos" },
-            { icon: CalendarDays, label: "Calendário Global", href: "/admin/calendario" },
-            { icon: User, label: "Usuários", href: "/admin/usuarios" },
-            { icon: Users, label: "Guias", href: "/admin/guias" },
-            { icon: Heart, label: "Clientes", href: "/admin/clientes" },
-            { icon: MapPinIcon, label: "Passeios", href: "/admin/passeios" },
-            { icon: DollarSignIcon, label: "Financeiro", href: "/admin/financeiro" },
-          ].map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
-                  ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
-                  : "text-gray-700 hover:bg-gray-50"
-                }`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </div>
-
-      {/* Perfil do usuário */}
-      <div className="absolute bottom-6 left-6 right-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-gray-700">
-              {user?.nome?.charAt(0) || 'U'}
-            </span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">{user?.nome || 'Usuário'}</p>
-            <p className="text-xs text-gray-600">{user?.email || 'email@exemplo.com'}</p>
-          </div>
-        </div>
-        <Button variant="outline" size="sm" className="w-full" onClick={() => onLogout()}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
-      </div>
-    </div>
-  </div>
-);
-
-// Componente principal do dashboard
 export const AdminDashboard: React.FC = () => {
   const { logout, user } = useAuth();
   const [isAddTourModalOpen, setIsAddTourModalOpen] = useState(false);
@@ -361,141 +284,126 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Navegação mobile */}
-      <AdminMobileNav
-        userName={user?.nome || 'Usuário'}
-        userEmail={user?.email || 'email@exemplo.com'}
-        onLogout={logout}
-      />
-
-      {/* Barra lateral */}
-      <Sidebar onLogout={logout} user={user} />
-
-      {/* Conteúdo principal */}
-      <div className="flex-1 lg:ml-64 ml-0">
-        <div className="p-4 lg:p-6">
-          {/* Cabeçalho */}
-          <div className="mb-4 flex justify-between items-start">
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
-                Dashboard Administrativo
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Bem-vindo, {user?.nome || 'Usuário'}. Aqui está um resumo do seu negócio.
-              </p>
-            </div>
-            <Button
-              onClick={() => window.location.reload()}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Atualizar
-            </Button>
-          </div>
-
-          {/* Cards de métricas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-            {isLoading ? (
-              <div className="col-span-full flex justify-center items-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
-              </div>
-            ) : (
-              (() => {
-                const cards = createMetricCards(dashboardStats);
-                console.log('Cards criados:', cards);
-                return cards.map((metric, index) => (
-                  <MetricCard key={index} metric={metric} />
-                ));
-              })()
-            )}
-          </div>
-
-          {/* Seção inferior */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
-            {/* Tarefas Recentes */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <span className="text-green-600">▲</span>
-                  Tarefas Recentes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  {recentTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center ${task.color}`}
-                        >
-                          <div className="text-white">{task.icon}</div>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            Tarefa ID: {task.id}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {task.people} pessoa(s) • R$ {task.value.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant="secondary" className="mb-1">
-                          {task.status}
-                        </Badge>
-                        <p className="text-xs text-gray-500">{task.date}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Ações Rápidas */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Ações Rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="space-y-2">
-                  {quickActions.map((action, index) => (
-                    <div key={index}>
-                      {action.title === "Cadastrar Passeio" ? (
-                        <Button
-                          className={`w-full justify-start ${action.color} text-white`}
-                          variant="default"
-                          onClick={() => setIsAddTourModalOpen(true)}
-                        >
-                          {action.icon}
-                          <span className="ml-2">{action.title}</span>
-                        </Button>
-                      ) : (
-                        <a href={action.href}>
-                          <Button
-                            className={`w-full justify-start ${action.color} text-white`}
-                            variant="default"
-                          >
-                            {action.icon}
-                            <span className="ml-2">{action.title}</span>
-                          </Button>
-                        </a>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+    <div className="p-4 lg:p-6">
+      {/* Cabeçalho */}
+      <div className="mb-4 flex justify-between items-start">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+            Dashboard Administrativo
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            Bem-vindo, {user?.nome || 'Usuário'}. Aqui está um resumo do seu negócio.
+          </p>
         </div>
+        <Button
+          onClick={() => window.location.reload()}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Atualizar
+        </Button>
+      </div>
+
+      {/* Cards de métricas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        {isLoading ? (
+          <div className="col-span-full flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Carregando estatísticas...</span>
+          </div>
+        ) : (
+          (() => {
+            const cards = createMetricCards(dashboardStats);
+            console.log('Cards criados:', cards);
+            return cards.map((metric, index) => (
+              <MetricCard key={index} metric={metric} />
+            ));
+          })()
+        )}
+      </div>
+
+      {/* Seção inferior */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4">
+        {/* Tarefas Recentes */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <span className="text-green-600">▲</span>
+              Tarefas Recentes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {recentTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${task.color}`}
+                    >
+                      <div className="text-white">{task.icon}</div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        Tarefa ID: {task.id}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {task.people} pessoa(s) • R$ {task.value.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="secondary" className="mb-1">
+                      {task.status}
+                    </Badge>
+                    <p className="text-xs text-gray-500">{task.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ações Rápidas */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Ações Rápidas</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {quickActions.map((action, index) => (
+                <div key={index}>
+                  {action.title === "Cadastrar Passeio" ? (
+                    <Button
+                      className={`w-full justify-start ${action.color} text-white`}
+                      variant="default"
+                      onClick={() => setIsAddTourModalOpen(true)}
+                    >
+                      {action.icon}
+                      <span className="ml-2">{action.title}</span>
+                    </Button>
+                  ) : (
+                    <a href={action.href}>
+                      <Button
+                        className={`w-full justify-start ${action.color} text-white`}
+                        variant="default"
+                      >
+                        {action.icon}
+                        <span className="ml-2">{action.title}</span>
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Modal para adicionar passeio */}
