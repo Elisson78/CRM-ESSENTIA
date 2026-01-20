@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { CalendarioGlobal } from "@/components/calendario-global";
 import { getBoardData } from "@/app/admin/agendamentos/actions";
 
