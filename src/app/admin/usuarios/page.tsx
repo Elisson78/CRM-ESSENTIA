@@ -1,5 +1,5 @@
-export const dynamic = "force-dynamic";
 "use client";
+export const dynamic = "force-dynamic";
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -106,7 +106,7 @@ const UsersManagementPage = () => {
 
   const handleCreateUser = async () => {
     try {
-      console.log('🚀 Iniciando criação de usuário...', { 
+      console.log('🚀 Iniciando criação de usuário...', {
         email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
@@ -327,20 +327,20 @@ const UsersManagementPage = () => {
 
   const getUserTypeBadge = (type: string) => {
     console.log('🏷️ Gerando badge para tipo:', type, typeof type);
-    
+
     const typeConfig = {
-      admin: { 
-        color: "bg-red-100 text-red-800 border-red-200", 
+      admin: {
+        color: "bg-red-100 text-red-800 border-red-200",
         label: "Administrador",
         icon: <Shield className="h-3 w-3" />
       },
-      guia: { 
-        color: "bg-blue-100 text-blue-800 border-blue-200", 
+      guia: {
+        color: "bg-blue-100 text-blue-800 border-blue-200",
         label: "Guia",
         icon: <UserCheck className="h-3 w-3" />
       },
-      cliente: { 
-        color: "bg-green-100 text-green-800 border-green-200", 
+      cliente: {
+        color: "bg-green-100 text-green-800 border-green-200",
         label: "Cliente",
         icon: <User className="h-3 w-3" />
       }
@@ -407,7 +407,7 @@ const UsersManagementPage = () => {
                   <Input
                     id="firstName"
                     value={newUser.firstName}
-                    onChange={(e) => setNewUser({...newUser, firstName: e.target.value})}
+                    onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
                     placeholder="Nome"
                   />
                 </div>
@@ -416,7 +416,7 @@ const UsersManagementPage = () => {
                   <Input
                     id="lastName"
                     value={newUser.lastName}
-                    onChange={(e) => setNewUser({...newUser, lastName: e.target.value})}
+                    onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
                     placeholder="Sobrenome"
                   />
                 </div>
@@ -428,7 +428,7 @@ const UsersManagementPage = () => {
                   id="email"
                   type="email"
                   value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   placeholder="email@exemplo.com"
                 />
               </div>
@@ -439,14 +439,14 @@ const UsersManagementPage = () => {
                   id="password"
                   type="password"
                   value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                   placeholder="Senha"
                 />
               </div>
 
               <div>
                 <Label htmlFor="userType">Tipo de Usuário</Label>
-                <Select value={newUser.userType} onValueChange={(value: any) => setNewUser({...newUser, userType: value})}>
+                <Select value={newUser.userType} onValueChange={(value: any) => setNewUser({ ...newUser, userType: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -483,7 +483,7 @@ const UsersManagementPage = () => {
                   <Input
                     id="editFirstName"
                     value={editUser.firstName}
-                    onChange={(e) => setEditUser({...editUser, firstName: e.target.value})}
+                    onChange={(e) => setEditUser({ ...editUser, firstName: e.target.value })}
                     placeholder="Nome"
                   />
                 </div>
@@ -492,7 +492,7 @@ const UsersManagementPage = () => {
                   <Input
                     id="editLastName"
                     value={editUser.lastName}
-                    onChange={(e) => setEditUser({...editUser, lastName: e.target.value})}
+                    onChange={(e) => setEditUser({ ...editUser, lastName: e.target.value })}
                     placeholder="Sobrenome"
                   />
                 </div>
@@ -504,7 +504,7 @@ const UsersManagementPage = () => {
                   id="editEmail"
                   type="email"
                   value={editUser.email}
-                  onChange={(e) => setEditUser({...editUser, email: e.target.value})}
+                  onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
                   placeholder="email@exemplo.com"
                 />
               </div>
@@ -515,14 +515,14 @@ const UsersManagementPage = () => {
                   id="editPassword"
                   type="password"
                   value={editUser.password}
-                  onChange={(e) => setEditUser({...editUser, password: e.target.value})}
+                  onChange={(e) => setEditUser({ ...editUser, password: e.target.value })}
                   placeholder="Deixe em branco para manter a senha atual"
                 />
               </div>
 
               <div>
                 <Label htmlFor="editUserType">Tipo de Usuário</Label>
-                <Select value={editUser.userType} onValueChange={(value: any) => setEditUser({...editUser, userType: value})}>
+                <Select value={editUser.userType} onValueChange={(value: any) => setEditUser({ ...editUser, userType: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
