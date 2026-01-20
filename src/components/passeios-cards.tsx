@@ -99,6 +99,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       preco: 150,
       duracao: "4h",
       categoria: "Romance",
+      imagens: ["https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 15,
       ativo: 1
     },
@@ -109,6 +110,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       preco: 280,
       duracao: "8h",
       categoria: "Aventura",
+      imagens: ["https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 12,
       ativo: 1
     },
@@ -119,6 +121,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       preco: 200,
       duracao: "6h",
       categoria: "Gastronomia",
+      imagens: ["https://images.unsplash.com/photo-1541167760496-1628856ab752?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 10,
       ativo: 1
     },
@@ -129,6 +132,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       preco: 120,
       duracao: "5h",
       categoria: "História",
+      imagens: ["https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 20,
       ativo: 1
     },
@@ -139,6 +143,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       preco: 90,
       duracao: "3h",
       categoria: "Cultural",
+      imagens: ["https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 15,
       ativo: 1
     },
@@ -149,6 +154,7 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
       preco: 180,
       duracao: "7h",
       categoria: "Natureza",
+      imagens: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 8,
       ativo: 1
     }
