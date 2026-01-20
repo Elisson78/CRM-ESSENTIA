@@ -30,170 +30,6 @@ interface Lead {
   type: "lead" | "client";
 }
 
-// Dados mockados dos leads
-const mockLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Lucas Almeida",
-    email: "lucas.almeida@tourguide.com",
-    phone: "+55 11 91234-5678",
-    origin: "referral",
-    status: "converted",
-    interests: ["História", "Cultura"],
-    type: "lead",
-  },
-  {
-    id: "2",
-    name: "Carla Moreira",
-    email: "carla.moreira@tourguide.com",
-    phone: "+55 21 92345-6789",
-    origin: "referral",
-    status: "converted",
-    interests: ["Gastronomia", "Vinhos"],
-    type: "lead",
-  },
-  {
-    id: "3",
-    name: "Rafael Santos",
-    email: "rafael.santos@tourguide.com",
-    phone: "+55 85 93456-7890",
-    origin: "website",
-    status: "converted",
-    interests: ["Aventura", "Natureza"],
-    type: "lead",
-  },
-  {
-    id: "4",
-    name: "Beatriz Ferreira",
-    email: "beatriz.ferreira@tourguide.com",
-    phone: "+55 31 94567-8901",
-    origin: "referral",
-    status: "converted",
-    interests: ["História", "Arquitetura"],
-    type: "lead",
-  },
-  {
-    id: "5",
-    name: "Diego Costa",
-    email: "diego.costa@tourguide.com",
-    phone: "+55 47 95678-9012",
-    origin: "social_media",
-    status: "converted",
-    interests: ["Cultura", "Gastronomia"],
-    type: "lead",
-  },
-  {
-    id: "6",
-    name: "Patricia Alves",
-    email: "patricia.alves@tourguide.com",
-    phone: "+55 11 96789-0123",
-    origin: "website",
-    status: "converted",
-    interests: ["Romântico", "História"],
-    type: "lead",
-  },
-  {
-    id: "7",
-    name: "Marcos Silva",
-    email: "marcos.silva@tourguide.com",
-    phone: "+55 21 97890-1234",
-    origin: "referral",
-    status: "converted",
-    interests: ["Aventura", "Esportes"],
-    type: "lead",
-  },
-  {
-    id: "8",
-    name: "Ana Paula",
-    email: "ana.paula@tourguide.com",
-    phone: "+55 85 98901-2345",
-    origin: "social_media",
-    status: "converted",
-    interests: ["Cultura", "Arte"],
-    type: "lead",
-  },
-  {
-    id: "9",
-    name: "Roberto Lima",
-    email: "roberto.lima@tourguide.com",
-    phone: "+55 31 99012-3456",
-    origin: "website",
-    status: "converted",
-    interests: ["Gastronomia", "História"],
-    type: "lead",
-  },
-  {
-    id: "10",
-    name: "Fernanda Costa",
-    email: "fernanda.costa@tourguide.com",
-    phone: "+55 47 90123-4567",
-    origin: "referral",
-    status: "converted",
-    interests: ["Natureza", "Fotografia"],
-    type: "lead",
-  },
-  {
-    id: "11",
-    name: "Carlos Eduardo",
-    email: "carlos.eduardo@tourguide.com",
-    phone: "+55 11 91234-5679",
-    origin: "website",
-    status: "converted",
-    interests: ["História", "Arquitetura"],
-    type: "lead",
-  },
-  {
-    id: "12",
-    name: "Juliana Santos",
-    email: "juliana.santos@tourguide.com",
-    phone: "+55 21 92345-6780",
-    origin: "social_media",
-    status: "converted",
-    interests: ["Cultura", "Gastronomia"],
-    type: "lead",
-  },
-  {
-    id: "13",
-    name: "Ricardo Oliveira",
-    email: "ricardo.oliveira@tourguide.com",
-    phone: "+55 85 93456-7891",
-    origin: "referral",
-    status: "converted",
-    interests: ["Aventura", "Esportes"],
-    type: "lead",
-  },
-  {
-    id: "14",
-    name: "Mariana Silva",
-    email: "mariana.silva@tourguide.com",
-    phone: "+55 31 94567-8902",
-    origin: "website",
-    status: "converted",
-    interests: ["Romântico", "História"],
-    type: "lead",
-  },
-  {
-    id: "15",
-    name: "Thiago Almeida",
-    email: "thiago.almeida@tourguide.com",
-    phone: "+55 47 95678-9013",
-    origin: "social_media",
-    status: "converted",
-    interests: ["Natureza", "Fotografia"],
-    type: "lead",
-  },
-  {
-    id: "16",
-    name: "Camila Ferreira",
-    email: "camila.ferreira@tourguide.com",
-    phone: "+55 11 96789-0124",
-    origin: "referral",
-    status: "converted",
-    interests: ["Gastronomia", "Vinhos"],
-    type: "lead",
-  },
-];
-
 // Componente do dropdown de ações
 const ActionDropdown: React.FC<{ lead: Lead }> = ({ lead }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -268,7 +104,7 @@ const ActionDropdown: React.FC<{ lead: Lead }> = ({ lead }) => {
 };
 
 export default function ManageClientsPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"clients" | "leads">("leads");
   const [searchTerm, setSearchTerm] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -282,9 +118,9 @@ export default function ManageClientsPage() {
         if (response.ok) {
           const data = await response.json();
           const formattedLeads: Lead[] = data.map((item: any) => ({
-            id: item.id,
-            name: item.nome,
-            email: item.email,
+            id: String(item.id),
+            name: item.nome || "Sem Nome",
+            email: item.email || "Sem Email",
             phone: item.telefone || "",
             origin: item.origin || 'website',
             status: item.status || 'novo',
@@ -293,13 +129,12 @@ export default function ManageClientsPage() {
               try {
                 if (typeof item.preferencias === 'string') {
                   const pref = item.preferencias.trim();
-                  // Apenas parsear se parecer JSON válido (array ou objeto ou string quoted)
                   if (pref.startsWith('[') || pref.startsWith('{') || pref.startsWith('"')) {
                     try {
                       const parsed = JSON.parse(pref);
                       return Array.isArray(parsed) ? parsed : [parsed];
                     } catch {
-                      // Ignora erro e cai no fallback
+                      // fallback
                     }
                   }
                   return pref.split(',').map((s: string) => s.trim());
@@ -327,15 +162,15 @@ export default function ManageClientsPage() {
   const filteredLeads = leads
     .filter(lead => activeTab === 'clients' ? lead.type === 'client' : lead.type === 'lead')
     .filter(lead =>
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (lead.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (lead.email || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
   // Calcular métricas
   const totalClients = leads.filter(lead => lead.type === "client").length;
   const totalLeads = leads.filter(lead => lead.type === "lead").length;
   const convertedLeads = leads.filter(lead => lead.status === "converted").length;
-  const newLeadsThisMonth = 2; // Mock data
+  const newLeadsThisMonth = 0; // Mock 
 
   // Obter origem colorida
   const getOriginColor = (origin: string) => {
@@ -355,43 +190,42 @@ export default function ManageClientsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "converted":
-        return "bg-green-100 text-green-800";
       case "active":
-        return "bg-blue-100 text-blue-800";
+        return "bg-green-100 text-green-800";
       case "inactive":
         return "bg-gray-100 text-gray-800";
+      case "novo":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-2">Carregando dados...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-3 lg:p-5 h-full overflow-auto">
+    <div className="p-4 lg:p-6">
       {/* Cabeçalho */}
-      <div className="mb-4">
-        <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
+      <div className="mb-6">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
           Gerenciar Clientes & Leads
         </h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-gray-600 mt-2">
           Visualize seus clientes ativos e leads em potencial.
         </p>
       </div>
 
-      {/* Barra de busca */}
-      <div className="flex justify-end mb-3">
-        <div className="relative w-80">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar por nome ou email"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-9 text-sm"
-          />
-        </div>
-      </div>
-
       {/* Cards de métricas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -438,8 +272,8 @@ export default function ManageClientsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-gray-600 truncate">Novos Leads (Mês)</p>
-                <p className="text-xl font-bold text-gray-900 mt-1">{newLeadsThisMonth}</p>
+                <p className="text-xs font-medium text-gray-600 truncate">Informaçoes</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">Geral</p>
               </div>
               <div className="p-2.5 rounded-lg bg-purple-100 flex-shrink-0 ml-3">
                 <Plus className="h-5 w-5 text-purple-600" />
@@ -449,13 +283,13 @@ export default function ManageClientsPage() {
         </Card>
       </div>
 
-      {/* Tabs */}
-      <div className="mb-3">
+      {/* Busca e Tabs */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab("clients")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === "clients"
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "clients"
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
@@ -464,7 +298,7 @@ export default function ManageClientsPage() {
             </button>
             <button
               onClick={() => setActiveTab("leads")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === "leads"
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "leads"
                 ? "border-blue-500 text-blue-600"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
@@ -472,6 +306,16 @@ export default function ManageClientsPage() {
               Leads ({totalLeads})
             </button>
           </nav>
+        </div>
+
+        <div className="relative w-full lg:w-80">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Buscar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
@@ -482,93 +326,102 @@ export default function ManageClientsPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
-                    Lead
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nome
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contato
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Origem
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Interesses
                   </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                          <span className="text-sm font-medium text-blue-600">
-                            {lead.name.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {lead.name}
+                {filteredLeads.length > 0 ? (
+                  filteredLeads.map((lead) => (
+                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                            <span className="text-sm font-medium text-blue-600">
+                              {(lead.name || "C").charAt(0).toUpperCase()}
+                            </span>
                           </div>
-                          <div className="text-sm text-gray-500">
-                            Lead potencial
+                          <div className="font-medium text-gray-900">{lead.name || "Sem Nome"}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center text-xs text-gray-900">
+                            <Mail className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
+                            <span className="truncate max-w-[150px]">{lead.email || "Sem Email"}</span>
                           </div>
+                          {lead.phone && (
+                            <div className="flex items-center text-xs text-gray-500">
+                              <Phone className="h-3 w-3 text-gray-400 mr-2 flex-shrink-0" />
+                              {lead.phone}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center text-xs text-gray-900">
-                          <Mail className="h-3 w-3 text-gray-400 mr-1.5 flex-shrink-0" />
-                          <span className="truncate">{lead.email}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge
+                          variant="secondary"
+                          className={`${getOriginColor(lead.origin)} text-xs border-0`}
+                        >
+                          {lead.origin}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Badge
+                          variant="secondary"
+                          className={`${getStatusColor(lead.status)} text-xs border-0`}
+                        >
+                          {lead.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {lead.interests && lead.interests.length > 0 ? (
+                            <>
+                              {lead.interests.slice(0, 2).map((interest, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {interest}
+                                </Badge>
+                              ))}
+                              {lead.interests.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{lead.interests.length - 2}
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-gray-400 text-xs">-</span>
+                          )}
                         </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Phone className="h-3 w-3 text-gray-400 mr-1.5 flex-shrink-0" />
-                          {lead.phone}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <Badge
-                        variant="secondary"
-                        className={`${getOriginColor(lead.origin)} text-xs`}
-                      >
-                        {lead.origin}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <Badge
-                        variant="secondary"
-                        className={`${getStatusColor(lead.status)} text-xs`}
-                      >
-                        {lead.status}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {lead.interests.slice(0, 2).map((interest, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {interest}
-                          </Badge>
-                        ))}
-                        {lead.interests.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{lead.interests.length - 2}
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-500">
-                      <ActionDropdown lead={lead} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <ActionDropdown lead={lead} />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500">
+                      Nenhum resultado encontrado.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
