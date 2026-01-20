@@ -10,7 +10,15 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD,
     ssl: process.env.NODE_ENV === 'production'
         ? { rejectUnauthorized: false } // Allows SSL for Supabase/External DBs in production
-        : false
+        : false,
+    connectionTimeoutMillis: 10000, // 10s
+    idleTimeoutMillis: 30000,
+});
+
+pool.on('error', (err) => {
+    if (!isBuildTime) {
+        console.error('❌ Unexpected error on idle database client:', err.message);
+    }
 });
 
 if (!isBuildTime) {
