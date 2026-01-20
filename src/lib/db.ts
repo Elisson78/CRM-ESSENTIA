@@ -6,7 +6,9 @@ const pool = new Pool({
     database: process.env.DB_NAME,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    ssl: false
+    ssl: process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false } // Allows SSL for Supabase/External DBs in production
+        : false
 });
 
 console.log(`🔌 DB Connection: ${process.env.DB_HOST}:${process.env.DB_PORT} - DB: ${process.env.DB_NAME}`);
