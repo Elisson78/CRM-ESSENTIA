@@ -460,10 +460,10 @@ const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 lg:pl-10">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar user={user} onLogout={logout} />
 
-        <div className="pl-2 pr-3 sm:pl-4 sm:pr-4 lg:pl-3 lg:pr-8 xl:pl-4 xl:pr-10 py-4 lg:py-10">
+        <div className="flex-1 lg:ml-64 ml-0 p-4 lg:p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">

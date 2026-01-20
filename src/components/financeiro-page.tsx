@@ -172,7 +172,7 @@ const financialMetrics: FinancialMetric[] = [
     iconColor: "bg-green-500",
   },
   {
-    title: "Receita Líquida", 
+    title: "Receita Líquida",
     value: "R$ 13025.35",
     growth: "+8%",
     icon: <CreditCard className="h-6 w-6" />,
@@ -191,7 +191,7 @@ const financialMetrics: FinancialMetric[] = [
   {
     title: "Receita Pendente",
     value: "R$ 3460.00",
-    subtitle: "4 agendamentos", 
+    subtitle: "4 agendamentos",
     growth: "",
     icon: <FileText className="h-6 w-6" />,
     bgColor: "bg-orange-50",
@@ -206,9 +206,9 @@ const getStatusBadge = (status: string) => {
     "Concluído": { color: "bg-green-100 text-green-800", text: "Concluído" },
     "Confirmado": { color: "bg-blue-100 text-blue-800", text: "Confirmado" }
   };
-  
+
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["Pendente"];
-  
+
   return (
     <Badge className={`${config.color} border-0`}>
       {config.text}
@@ -223,9 +223,9 @@ const getPagamentoBadge = (pagamento: string) => {
     "Pago": { color: "bg-black text-white", text: "Pago" },
     "Confirmado": { color: "bg-gray-100 text-gray-800", text: "Confirmado" }
   };
-  
+
   const config = pagamentoConfig[pagamento as keyof typeof pagamentoConfig] || pagamentoConfig["Pendente"];
-  
+
   return (
     <Badge className={`${config.color} border-0`}>
       {config.text}
@@ -253,11 +253,10 @@ const FinancialMetricCard: React.FC<{ metric: FinancialMetric; index: number }> 
                 </div>
               )}
               {metric.subtitle && (
-                <span className={`text-xs font-medium ${
-                  metric.subtitle.includes("agendamentos") 
-                    ? "text-orange-600" 
+                <span className={`text-xs font-medium ${metric.subtitle.includes("agendamentos")
+                    ? "text-orange-600"
                     : "text-purple-600"
-                }`}>
+                  }`}>
                   {metric.subtitle}
                 </span>
               )}
@@ -302,11 +301,10 @@ const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user,
             <a
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                item.active
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
                   ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                   : "text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -343,22 +341,22 @@ const FinanceiroPage: React.FC = () => {
   const [monthFilter, setMonthFilter] = useState("Todos os Meses");
 
   const filteredTransactions = transactionsData.filter(transaction => {
-    const matchesSearch = 
+    const matchesSearch =
       transaction.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.passeio.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.guia.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === "Todos os Status" || transaction.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar user={user} onLogout={logout} />
-      
-      <div className="flex-1 lg:ml-05 ml-0">
-        <div className="p-3 lg:p-5">
+
+      <div className="flex-1 lg:ml-64 ml-0">
+        <div className="p-4 lg:p-6">
           {/* Cabeçalho da página */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
             <div>
@@ -393,7 +391,7 @@ const FinanceiroPage: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div className="flex gap-2">
               <div className="relative">
                 <Button variant="outline" className="flex items-center gap-2">
@@ -401,7 +399,7 @@ const FinanceiroPage: React.FC = () => {
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <div className="relative">
                 <Button variant="outline" className="flex items-center gap-2">
                   {monthFilter}
@@ -454,9 +452,8 @@ const FinanceiroPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="py-2.5 px-4">
-                            <span className={`font-medium text-sm ${
-                              transaction.comissao === 0 ? 'text-red-600' : 'text-purple-600'
-                            }`}>
+                            <span className={`font-medium text-sm ${transaction.comissao === 0 ? 'text-red-600' : 'text-purple-600'
+                              }`}>
                               {formatCurrency(transaction.comissao)}
                             </span>
                           </td>

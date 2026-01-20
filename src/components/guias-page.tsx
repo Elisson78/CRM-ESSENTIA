@@ -102,9 +102,9 @@ const getStatusBadge = (status: string) => {
     "Inativo": { color: "bg-red-100 text-red-800", icon: <XCircle className="h-3 w-3" /> },
     "Pendente": { color: "bg-yellow-100 text-yellow-800", icon: <Clock className="h-3 w-3" /> }
   };
-  
+
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["Pendente"];
-  
+
   return (
     <Badge className={`${config.color} border-0 flex items-center gap-1`}>
       {config.icon}
@@ -178,11 +178,10 @@ const Sidebar: React.FC<{ user: any; onLogout: () => Promise<void> }> = ({ user,
             <a
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                item.active
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
                   ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                   : "text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -274,14 +273,14 @@ const GuiasPage: React.FC = () => {
   }, []);
 
   const filteredGuias = guiasData.filter(guia => {
-    const matchesSearch = 
+    const matchesSearch =
       guia.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       guia.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (guia.especialidades && Array.isArray(guia.especialidades) && 
-       guia.especialidades.some(esp => esp.toLowerCase().includes(searchTerm.toLowerCase())));
-    
+      (guia.especialidades && Array.isArray(guia.especialidades) &&
+        guia.especialidades.some(esp => esp.toLowerCase().includes(searchTerm.toLowerCase())));
+
     const matchesStatus = statusFilter === "Todos os Status" || guia.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -302,9 +301,9 @@ const GuiasPage: React.FC = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
-      
-      <div className="flex-1 lg:ml-05 ml-0">
-        <div className="p-3 lg:p-5">
+
+      <div className="flex-1 lg:ml-64 ml-0">
+        <div className="p-4 lg:p-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
             <div>
               <h1 className="text-xl lg:text-2xl font-bold text-gray-900">
@@ -342,7 +341,7 @@ const GuiasPage: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            
+
             <div className="flex gap-2">
               <div className="relative">
                 <Button variant="outline" className="flex items-center gap-2">

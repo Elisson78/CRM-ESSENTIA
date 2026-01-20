@@ -231,11 +231,10 @@ const Sidebar: React.FC<{ onLogout: () => Promise<void>; user: any }> = ({ onLog
             <a
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                item.active
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${item.active
                   ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                   : "text-gray-700 hover:bg-gray-50"
-              }`}
+                }`}
             >
               <item.icon className="h-4 w-4" />
               {item.label}
@@ -288,17 +287,17 @@ export const AdminDashboard: React.FC = () => {
         console.log('Carregando estatísticas do dashboard...');
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
-        
+
         const response = await fetch('/api/dashboard', {
           signal: controller.signal,
-          headers: { 
+          headers: {
             'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
           }
         });
-        
+
         clearTimeout(timeoutId);
-        
+
         if (response.ok) {
           const stats = await response.json();
           console.log('Estatísticas carregadas:', stats);
@@ -374,8 +373,8 @@ export const AdminDashboard: React.FC = () => {
       <Sidebar onLogout={logout} user={user} />
 
       {/* Conteúdo principal */}
-      <div className="flex-1 lg:ml-05 ml-0">
-        <div className="p-3 lg:p-5">
+      <div className="flex-1 lg:ml-64 ml-0">
+        <div className="p-4 lg:p-6">
           {/* Cabeçalho */}
           <div className="mb-4 flex justify-between items-start">
             <div>
@@ -386,9 +385,9 @@ export const AdminDashboard: React.FC = () => {
                 Bem-vindo, {user?.nome || 'Usuário'}. Aqui está um resumo do seu negócio.
               </p>
             </div>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
               size="sm"
               className="flex items-center gap-2"
             >

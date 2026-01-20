@@ -433,8 +433,8 @@ const ManageToursPage: React.FC = () => {
         onLogout={logout}
       />
       <Sidebar user={user} onLogout={logout} />
-      <div className="flex-1 lg:ml-05 ml-0">
-        <div className="p-4 lg:p-8">
+      <div className="flex-1 lg:ml-64 ml-0">
+        <div className="p-4 lg:p-6">
           <div className="mb-8">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
               Gerenciar Passeios
