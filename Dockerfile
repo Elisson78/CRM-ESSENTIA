@@ -33,9 +33,27 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Ensure all UI variables are available at runtime
+ARG DB_HOST
+ARG DB_PORT
+ARG DB_NAME
+ARG DB_USER
+ARG DB_PASSWORD
+ARG JWT_SECRET
+ARG NEXT_PUBLIC_APP_URL
+ARG PORT
+
+ENV DB_HOST=$DB_HOST
+ENV DB_PORT=${DB_PORT:-5432}
+ENV DB_NAME=$DB_NAME
+ENV DB_USER=$DB_USER
+ENV DB_PASSWORD=$DB_PASSWORD
+ENV JWT_SECRET=$JWT_SECRET
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV PORT=${PORT:-3000}
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs
@@ -51,6 +69,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
+# We expose the PORT variable value
 EXPOSE 3000
 
 CMD ["node", "server.js"]

@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
 
+const isBuildTime = process.env.SKIP_DB_CHECK === 'true';
+
 const pool = new Pool({
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT || '5432'),
@@ -11,7 +13,12 @@ const pool = new Pool({
         : false
 });
 
-console.log(`🔌 DB Connection: ${process.env.DB_HOST}:${process.env.DB_PORT} - DB: ${process.env.DB_NAME}`);
+if (!isBuildTime) {
+    console.log(`🔌 DB Connection Target: ${process.env.DB_HOST}:${process.env.DB_PORT} - DB: ${process.env.DB_NAME}`);
+    if (!process.env.DB_HOST) {
+        console.error('❌ CRITICAL: DB_HOST is not defined in environment variables!');
+    }
+}
 
 export const db = {
     query: (text: string, params?: any[]) => {
