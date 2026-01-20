@@ -39,11 +39,13 @@ export async function GET(
       return NextResponse.json({ error: 'Passeio não encontrado' }, { status: 404 });
     }
 
+    const precoFinal = passeio.preco_real !== undefined ? passeio.preco_real : (passeio.preco || 0);
+
     const passeioFormatado = {
       id: passeio.id,
       nome: passeio.nome,
       descricao: passeio.descricao,
-      preco: passeio.preco,
+      preco: precoFinal,
       duracao: passeio.duracao,
       categoria: passeio.categoria,
       imagens: ensureArray(passeio.imagens),

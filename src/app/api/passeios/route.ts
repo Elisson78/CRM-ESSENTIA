@@ -31,23 +31,28 @@ export async function GET() {
     const todosPasseios = result.rows;
     console.log(`✅ ${todosPasseios.length} passeios encontrados no banco`);
 
-    const passeiosFormatados = todosPasseios.map((p) => ({
-      id: p.id,
-      nome: p.nome,
-      descricao: p.descricao,
-      preco: p.preco,
-      duracao: p.duracao,
-      categoria: p.categoria,
-      // Handle potential JSONB columns
-      imagens: ensureArray(p.imagens),
-      images: ensureArray(p.imagens), // Alias for Admin compatibility
-      inclusoes: ensureArray(p.inclusoes),
-      idiomas: ensureArray(p.idiomas),
-      capacidadeMaxima: p.capacidade_maxima, // pg returns snake_case
-      ativo: p.ativo,
-      criadoEm: p.criado_em,
-      atualizadoEm: p.atualizado_em
-    }));
+    const passeiosFormatados = todosPasseios.map((p) => {
+      // Use preco_real if preco is missing (Database alignment)
+      const precoFinal = p.preco_real !== undefined ? p.preco_real : (p.preco || 0);
+
+      return {
+        id: p.id,
+        nome: p.nome,
+        descricao: p.descricao,
+        preco: precoFinal,
+        duracao: p.duracao,
+        categoria: p.categoria,
+        // Handle potential JSONB or string array columns
+        imagens: ensureArray(p.imagens),
+        images: ensureArray(p.imagens), // Alias for Admin compatibility
+        inclusoes: ensureArray(p.inclusoes),
+        idiomas: ensureArray(p.idiomas),
+        capacidadeMaxima: p.capacidade_maxima, // pg returns snake_case
+        ativo: p.ativo,
+        criadoEm: p.criado_em,
+        atualizadoEm: p.atualizado_em
+      };
+    });
 
     return NextResponse.json(passeiosFormatados);
   } catch (error) {

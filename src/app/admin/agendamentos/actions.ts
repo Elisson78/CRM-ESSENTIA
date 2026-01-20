@@ -97,14 +97,17 @@ export async function getBoardData() {
             leadPhone: row.telefone
         }));
 
-        const passeios: Passeio[] = passeiosRes.rows.map(row => ({
-            id: String(row.id),
-            nome: String(row.nome),
-            descricao: String(row.descricao || ''),
-            preco: toNumber(row.preco, 0),
-            duracao: String(row.duracao || ''),
-            categoria: String(row.categoria || ''),
-        }));
+        const passeios: Passeio[] = passeiosRes.rows.map(row => {
+            const precoFinal = row.preco_real !== undefined ? row.preco_real : (row.preco || 0);
+            return {
+                id: String(row.id),
+                nome: String(row.nome),
+                descricao: String(row.descricao || ''),
+                preco: toNumber(precoFinal, 0),
+                duracao: String(row.duracao || ''),
+                categoria: String(row.categoria || ''),
+            };
+        });
 
         const clientes: Cliente[] = clientesRes.rows.map(row => ({
             id: String(row.id),
