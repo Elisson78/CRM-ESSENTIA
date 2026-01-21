@@ -48,6 +48,12 @@ interface Passeio {
   idiomas?: string[];
   capacidadeMaxima?: number;
   ativo: number;
+  tarifa2Pessoas?: number;
+  tarifa4Pessoas?: number;
+  tarifa6Pessoas?: number;
+  tarifa8Pessoas?: number;
+  tarifa10Pessoas?: number;
+  sobConsultaTexto?: string;
 }
 
 export default function PasseioDetalhes() {
@@ -279,6 +285,58 @@ export default function PasseioDetalhes() {
                   <h3 className="font-semibold text-gray-900 mb-3">Sobre este passeio</h3>
                   <p className="text-gray-600 leading-relaxed">{passeio.descricao}</p>
                 </div>
+
+                {(passeio.tarifa2Pessoas || passeio.tarifa4Pessoas || passeio.tarifa6Pessoas || passeio.tarifa8Pessoas || passeio.tarifa10Pessoas) && (
+                  <div className="border-t pt-6 mt-6">
+                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Euro className="w-5 h-5 text-orange-500" />
+                      Tabela de Tarifas
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {passeio.tarifa2Pessoas !== undefined && passeio.tarifa2Pessoas > 0 && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <span className="text-gray-600">Até 2 pessoas</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(passeio.tarifa2Pessoas)}</span>
+                        </div>
+                      )}
+                      {passeio.tarifa4Pessoas !== undefined && passeio.tarifa4Pessoas > 0 && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <span className="text-gray-600">Até 4 pessoas</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(passeio.tarifa4Pessoas)}</span>
+                        </div>
+                      )}
+                      {passeio.tarifa6Pessoas !== undefined && passeio.tarifa6Pessoas > 0 && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <span className="text-gray-600">Até 6 pessoas</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(passeio.tarifa6Pessoas)}</span>
+                        </div>
+                      )}
+                      {passeio.tarifa8Pessoas !== undefined && passeio.tarifa8Pessoas > 0 && (
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          <span className="text-gray-600">Até 8 pessoas</span>
+                          <span className="font-bold text-gray-900">{formatCurrency(passeio.tarifa8Pessoas)}</span>
+                        </div>
+                      )}
+                      {passeio.tarifa10Pessoas !== undefined && passeio.tarifa10Pessoas > 0 && (
+                        <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-100">
+                          <span className="text-orange-800 font-medium">Grupos até 10 pessoas</span>
+                          <span className="font-bold text-orange-900">{formatCurrency(passeio.tarifa10Pessoas)}</span>
+                        </div>
+                      )}
+                    </div>
+                    {passeio.sobConsultaTexto && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100 flex gap-3">
+                        <div className="text-blue-500 mt-1">
+                          <Star className="w-5 h-5 fill-current" />
+                        </div>
+                        <div>
+                          <p className="text-blue-900 font-semibold text-sm">Sob consulta:</p>
+                          <p className="text-blue-800 text-sm italic">{passeio.sobConsultaTexto}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
 

@@ -29,11 +29,17 @@ interface TourData {
   images: string[];
   specialRequirements: string;
   status: string;
+  tarifa2Pessoas?: number;
+  tarifa4Pessoas?: number;
+  tarifa6Pessoas?: number;
+  tarifa8Pessoas?: number;
+  tarifa10Pessoas?: number;
+  sobConsultaTexto?: string;
 }
 
 export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, isEdit = false }: AddTourModalProps) {
   const { uploadImage, uploading, error, clearError } = useImageUpload();
-  
+
   const [formData, setFormData] = useState<TourData>(initialData || {
     name: "",
     location: "",
@@ -47,12 +53,18 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
     images: [],
     specialRequirements: "",
     status: "Ativo",
+    tarifa2Pessoas: 0,
+    tarifa4Pessoas: 0,
+    tarifa6Pessoas: 0,
+    tarifa8Pessoas: 0,
+    tarifa10Pessoas: 0,
+    sobConsultaTexto: "",
   });
 
   // Atualizar formData quando initialData mudar (modo de edição)
   useEffect(() => {
     console.log('🔄 AddTourModal useEffect:', { isEdit, isOpen, initialData });
-    
+
     if (initialData && isEdit) {
       console.log('✅ Carregando dados para edição:', initialData);
       setFormData(initialData);
@@ -162,9 +174,9 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
 
   if (!isOpen) return null;
 
-  console.log('🎨 Renderizando AddTourModal:', { 
-    isEdit, 
-    isOpen, 
+  console.log('🎨 Renderizando AddTourModal:', {
+    isEdit,
+    isOpen,
     hasInitialData: !!initialData,
     formData: formData.name ? `${formData.name} (${formData.price})` : 'VAZIO'
   });
@@ -265,6 +277,66 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
             </div>
           </div>
 
+          <div className="space-y-4 border-t border-gray-100 pt-4">
+            <h3 className="text-sm font-semibold text-gray-900">Tarifas por Número de Pessoas</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="tarifa2">Até 2 pessoas (R$)</Label>
+                <Input
+                  id="tarifa2"
+                  type="number"
+                  value={formData.tarifa2Pessoas}
+                  onChange={(e) => handleInputChange("tarifa2Pessoas", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tarifa4">Até 4 pessoas (R$)</Label>
+                <Input
+                  id="tarifa4"
+                  type="number"
+                  value={formData.tarifa4Pessoas}
+                  onChange={(e) => handleInputChange("tarifa4Pessoas", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tarifa6">Até 06 pessoas (R$)</Label>
+                <Input
+                  id="tarifa6"
+                  type="number"
+                  value={formData.tarifa6Pessoas}
+                  onChange={(e) => handleInputChange("tarifa6Pessoas", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tarifa8">Até 08 pessoas (R$)</Label>
+                <Input
+                  id="tarifa8"
+                  type="number"
+                  value={formData.tarifa8Pessoas}
+                  onChange={(e) => handleInputChange("tarifa8Pessoas", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="tarifa10">Até 10 pessoas (R$)</Label>
+                <Input
+                  id="tarifa10"
+                  type="number"
+                  value={formData.tarifa10Pessoas}
+                  onChange={(e) => handleInputChange("tarifa10Pessoas", parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="sobConsulta">Sob consulta (Texto explicativo)</Label>
+              <Input
+                id="sobConsulta"
+                placeholder="Ex: Grupos com + de 8 pessoas, menores..."
+                value={formData.sobConsultaTexto}
+                onChange={(e) => handleInputChange("sobConsultaTexto", e.target.value)}
+              />
+            </div>
+          </div>
+
           <div className="space-y-3">
             <div>
               <Label className="text-sm font-medium text-gray-700">Idiomas</Label>
@@ -336,7 +408,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
               <Label className="text-sm font-medium text-gray-700">Imagens do Passeio</Label>
               <p className="text-xs text-gray-500 mt-1">Faça upload das imagens ou adicione URLs</p>
             </div>
-            
+
             {/* Upload de arquivo */}
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
               <input
@@ -347,8 +419,8 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                 id="image-upload"
                 disabled={uploading}
               />
-              <label 
-                htmlFor="image-upload" 
+              <label
+                htmlFor="image-upload"
                 className={`cursor-pointer flex flex-col items-center gap-2 ${uploading ? 'opacity-50' : 'hover:text-blue-600'}`}
               >
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
@@ -372,7 +444,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <p className="text-sm text-red-600">{error}</p>
-                <button 
+                <button
                   onClick={clearError}
                   className="text-xs text-red-500 hover:text-red-700 mt-1"
                 >
@@ -403,7 +475,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                 Adicionar
               </Button>
             </div>
-            
+
             {/* Lista de imagens adicionadas */}
             {formData.images.length > 0 && (
               <div className="space-y-2">
@@ -414,9 +486,9 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         {/* Preview da imagem */}
                         <div className="w-10 h-10 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                          <img 
-                            src={image} 
-                            alt="Preview" 
+                          <img
+                            src={image}
+                            alt="Preview"
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';

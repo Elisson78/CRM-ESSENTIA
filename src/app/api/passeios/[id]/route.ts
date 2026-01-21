@@ -53,6 +53,12 @@ export async function GET(
       inclusoes: ensureArray(passeio.inclusoes),
       idiomas: ensureArray(passeio.idiomas),
       capacidadeMaxima: passeio.capacidade_maxima,
+      tarifa2Pessoas: passeio.tarifa_2_pessoas,
+      tarifa4Pessoas: passeio.tarifa_4_pessoas,
+      tarifa6Pessoas: passeio.tarifa_6_pessoas,
+      tarifa8Pessoas: passeio.tarifa_8_pessoas,
+      tarifa10Pessoas: passeio.tarifa_10_pessoas,
+      sobConsultaTexto: passeio.sob_consulta_texto,
       ativo: passeio.ativo,
       criadoEm: passeio.criado_em,
       atualizadoEm: passeio.atualizado_em
@@ -95,6 +101,13 @@ export async function PUT(
     if (passeioData.includedItems || passeioData.inclusoes) addField('inclusoes', JSON.stringify(passeioData.includedItems || passeioData.inclusoes || []));
     if (passeioData.languages || passeioData.idiomas) addField('idiomas', JSON.stringify(passeioData.languages || passeioData.idiomas || []));
     if (passeioData.maxPeople || passeioData.capacidadeMaxima) addField('capacidade_maxima', parseInt(passeioData.maxPeople || passeioData.capacidadeMaxima) || 20);
+
+    if (passeioData.tarifa2Pessoas !== undefined) addField('tarifa_2_pessoas', parseFloat(passeioData.tarifa2Pessoas) || null);
+    if (passeioData.tarifa4Pessoas !== undefined) addField('tarifa_4_pessoas', parseFloat(passeioData.tarifa4Pessoas) || null);
+    if (passeioData.tarifa6Pessoas !== undefined) addField('tarifa_6_pessoas', parseFloat(passeioData.tarifa6Pessoas) || null);
+    if (passeioData.tarifa8Pessoas !== undefined) addField('tarifa_8_pessoas', parseFloat(passeioData.tarifa8Pessoas) || null);
+    if (passeioData.tarifa10Pessoas !== undefined) addField('tarifa_10_pessoas', parseFloat(passeioData.tarifa10Pessoas) || null);
+    if (passeioData.sobConsultaTexto !== undefined) addField('sob_consulta_texto', passeioData.sobConsultaTexto || null);
 
     // Status check
     const isActive = (passeioData.status === 'Ativo' || passeioData.ativo === 1 || passeioData.ativo === true) ? 1 : 0;

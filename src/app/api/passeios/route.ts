@@ -48,6 +48,12 @@ export async function GET() {
         inclusoes: ensureArray(p.inclusoes),
         idiomas: ensureArray(p.idiomas),
         capacidadeMaxima: p.capacidade_maxima, // pg returns snake_case
+        tarifa2Pessoas: p.tarifa_2_pessoas,
+        tarifa4Pessoas: p.tarifa_4_pessoas,
+        tarifa6Pessoas: p.tarifa_6_pessoas,
+        tarifa8Pessoas: p.tarifa_8_pessoas,
+        tarifa10Pessoas: p.tarifa_10_pessoas,
+        sobConsultaTexto: p.sob_consulta_texto,
         ativo: p.ativo,
         criadoEm: p.criado_em,
         atualizadoEm: p.atualizado_em
@@ -85,13 +91,30 @@ export async function POST(request: Request) {
 
     const insertQuery = `
       INSERT INTO passeios 
-      (id, nome, descricao, preco, duracao, categoria, imagens, inclusoes, idiomas, capacidade_maxima, ativo, criado_em, atualizado_em)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+      (id, nome, descricao, preco, duracao, categoria, imagens, inclusoes, idiomas, capacidade_maxima, ativo, criado_em, atualizado_em,
+       tarifa_2_pessoas, tarifa_4_pessoas, tarifa_6_pessoas, tarifa_8_pessoas, tarifa_10_pessoas, sob_consulta_texto)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), $12, $13, $14, $15, $16, $17)
       RETURNING *
     `;
 
     const result = await db.query(insertQuery, [
-      novoPasseioId, nome, descricao, preco, duracao, categoria, imagens, inclusoes, idiomas, capacidadeMaxima, 1
+      novoPasseioId,
+      nome,
+      descricao,
+      preco,
+      duracao,
+      categoria,
+      imagens,
+      inclusoes,
+      idiomas,
+      capacidadeMaxima,
+      1,
+      parseFloat(passeioData.tarifa2Pessoas) || null,
+      parseFloat(passeioData.tarifa4Pessoas) || null,
+      parseFloat(passeioData.tarifa6Pessoas) || null,
+      parseFloat(passeioData.tarifa8Pessoas) || null,
+      parseFloat(passeioData.tarifa10Pessoas) || null,
+      passeioData.sobConsultaTexto || null
     ]);
 
     console.log('✅ Inserção com sucesso. Rows:', result.rowCount);
