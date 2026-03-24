@@ -18,6 +18,7 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import AddClientModal from "./add-client-modal";
 
 interface Lead {
   id: string;
@@ -109,6 +110,7 @@ export default function ManageClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Carregar clientes do banco
   useEffect(() => {
@@ -215,13 +217,19 @@ export default function ManageClientsPage() {
   return (
     <div className="p-4 lg:p-6">
       {/* Cabeçalho */}
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
-          Gerenciar Clientes & Leads
-        </h1>
-        <p className="text-gray-600 mt-2">
-          Visualize seus clientes ativos e leads em potencial.
-        </p>
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+            Gerenciar Clientes & Leads
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Visualize seus clientes ativos e leads em potencial.
+          </p>
+        </div>
+        <Button onClick={() => setIsAddModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Cliente
+        </Button>
       </div>
 
       {/* Cards de métricas */}
@@ -427,6 +435,12 @@ export default function ManageClientsPage() {
           </div>
         </CardContent>
       </Card>
+      
+      <AddClientModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={() => { window.location.reload(); }} 
+      />
     </div>
   );
 }

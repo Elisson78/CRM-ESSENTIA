@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import NovaFaturaModal from "./nova-fatura-modal";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/format-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  Plus,
   Search,
   ChevronDown,
   MapPin,
@@ -37,6 +39,18 @@ interface Transaction {
   comissao: number;
   status: string;
   pagamento: string;
+}
+
+export interface Fatura {
+  id: string;
+  fatura_numero: string;
+  cliente_nome: string;
+  data_emissao: string;
+  cotacao_cambio_turismo: number;
+  total_eur: number;
+  total_brl: number;
+  status: string;
+  criado_em: string;
 }
 
 interface FinancialMetric {
@@ -273,15 +287,53 @@ const FinancialMetricCard: React.FC<{ metric: FinancialMetric; index: number }> 
 
 const FinanceiroPage: React.FC = () => {
   const { user, logout } = useAuth();
+  const [isNovaFaturaOpen, setIsNovaFaturaOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos os Status");
   const [monthFilter, setMonthFilter] = useState("Todos os Meses");
+  
+  const [faturas, setFaturas] = useState<Fatura[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredTransactions = transactionsData.filter(transaction => {
+  const fetchFaturas = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/faturas");
+      const data = await res.json();
+      if (data.success && data.faturas) {
+        setFaturas(data.faturas);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFaturas();
+  }, []);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir esta fatura permanentemente?")) return;
+    
+    try {
+      const res = await fetch(`/api/faturas/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        fetchFaturas();
+      } else {
+        alert("Erro ao excluir: " + data.error);
+      }
+    } catch (err) {
+      alert("Erro ao conectar com servidor.");
+    }
+  };
+
+  const filteredTransactions = faturas.filter(transaction => {
     const matchesSearch =
-      transaction.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.passeio.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      transaction.guia.toLowerCase().includes(searchTerm.toLowerCase());
+      (transaction.fatura_numero || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (transaction.cliente_nome || "").toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "Todos os Status" || transaction.status === statusFilter;
 
@@ -300,10 +352,16 @@ const FinanceiroPage: React.FC = () => {
             Controle completo de receitas, comissões e pagamentos.
           </p>
         </div>
-        <Button className="bg-green-600 hover:bg-green-700 text-white text-sm" size="sm">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar Relatório
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsNovaFaturaOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white text-sm" size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Fatura
+          </Button>
+          <Button className="bg-green-600 hover:bg-green-700 text-white text-sm" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+        </div>
       </div>
 
       {/* Cards de métricas financeiras */}
@@ -356,18 +414,22 @@ const FinanceiroPage: React.FC = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Nº Fatura</th>
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Data</th>
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Cliente</th>
-                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Passeio</th>
-                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Guia</th>
-                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Valor Total</th>
-                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Comissão</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Total EUR</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Total BRL</th>
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Status</th>
-                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Pagamento</th>
+                    <th className="text-right py-2 px-4 font-medium text-xs text-gray-600">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredTransactions.map((transaction, index) => (
+                  {loading ? (
+                    <tr><td colSpan={7} className="text-center py-8 text-gray-500">Carregando Faturas...</td></tr>
+                  ) : filteredTransactions.length === 0 ? (
+                    <tr><td colSpan={7} className="text-center py-8 text-gray-500">Nenhuma fatura encontrada.</td></tr>
+                  ) : (
+                  filteredTransactions.map((transaction, index) => (
                     <motion.tr
                       key={transaction.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -375,35 +437,48 @@ const FinanceiroPage: React.FC = () => {
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="py-2.5 px-4 text-gray-900">{transaction.data}</td>
-                      <td className="py-2.5 px-4 text-gray-900">{transaction.cliente}</td>
-                      <td className="py-2.5 px-4 text-gray-900">{transaction.passeio}</td>
-                      <td className="py-2.5 px-4 text-gray-600">{transaction.guia}</td>
+                      <td className="py-2.5 px-4 font-semibold text-gray-900">{transaction.fatura_numero}</td>
+                      <td className="py-2.5 px-4 text-gray-900">{new Date(transaction.data_emissao).toLocaleDateString('pt-BR')}</td>
+                      <td className="py-2.5 px-4 text-gray-900">{transaction.cliente_nome || "Sem Nome"}</td>
                       <td className="py-2.5 px-4">
-                        <span className="font-medium text-green-600 text-sm">
-                          {formatCurrency(transaction.valorTotal)}
+                        <span className="font-medium text-purple-600 text-sm">
+                          € {Number(transaction.total_eur).toFixed(2)}
                         </span>
                       </td>
                       <td className="py-2.5 px-4">
-                        <span className={`font-medium text-sm ${transaction.comissao === 0 ? 'text-red-600' : 'text-purple-600'
-                          }`}>
-                          {formatCurrency(transaction.comissao)}
+                        <span className="font-medium text-green-600 text-sm">
+                          R$ {Number(transaction.total_brl).toFixed(2)}
                         </span>
                       </td>
                       <td className="py-2.5 px-4">
                         {getStatusBadge(transaction.status)}
                       </td>
-                      <td className="py-2.5 px-4">
-                        {getPagamentoBadge(transaction.pagamento)}
+                      <td className="py-2.5 px-4 text-right">
+                         <div className="flex justify-end gap-2">
+                           <Button variant="outline" size="sm" className="h-7 px-2 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => window.open(`/fatura/${transaction.id}/imprimir`, '_blank')}>
+                             Imprimir
+                           </Button>
+                           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-red-500 hover:bg-red-50" onClick={() => handleDelete(transaction.id)}>
+                             Excluir
+                           </Button>
+                         </div>
                       </td>
                     </motion.tr>
-                  ))}
+                  )))}
                 </tbody>
               </table>
             </div>
           </CardContent>
         </Card>
       </motion.div>
+      <NovaFaturaModal
+        isOpen={isNovaFaturaOpen}
+        onClose={() => setIsNovaFaturaOpen(false)}
+        onSuccess={(faturaId) => { 
+          fetchFaturas(); // Recarrega a tabela
+          window.open(`/fatura/${faturaId}/imprimir`, '_blank'); // Abre a fatura em nova guia
+        }}
+      />
     </div>
   );
 };
