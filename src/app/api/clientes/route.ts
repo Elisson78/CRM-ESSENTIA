@@ -59,14 +59,14 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { nome, email, telefone } = body;
+    const { nome, email, telefone, cpf, endereco } = body;
     
     // Gerar um ID simples já que a coluna é VARCHAR(255) baseada no script de migration
     const newId = (Math.random().toString(36).substring(2, 10) + Date.now().toString(36));
 
     const result = await db.query(
-      `INSERT INTO clientes (id, nome, email, telefone, status) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-      [newId, nome, email, telefone, 'novo']
+      `INSERT INTO clientes (id, nome, email, telefone, status, cpf, endereco) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [newId, nome, email, telefone, 'novo', cpf, endereco]
     );
 
     return NextResponse.json({ success: true, id: result.rows[0].id });

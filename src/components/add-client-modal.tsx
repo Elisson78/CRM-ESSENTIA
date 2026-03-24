@@ -19,6 +19,8 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: AddClient
     nome: "",
     email: "",
     telefone: "",
+    cpf: "",
+    endereco: "",
   });
 
   if (!isOpen) return null;
@@ -36,7 +38,7 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: AddClient
       
       if (res.ok && data.success) {
         toast.success("Cliente criado com sucesso!");
-        setFormData({ nome: "", email: "", telefone: "" });
+        setFormData({ nome: "", email: "", telefone: "", cpf: "", endereco: "" });
         onSuccess();
         onClose();
       } else {
@@ -81,6 +83,21 @@ export default function AddClientModal({ isOpen, onClose, onSuccess }: AddClient
             <Input 
               value={formData.telefone} 
               onChange={e => setFormData({...formData, telefone: e.target.value})} 
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>CPF / CNPJ</Label>
+            <Input 
+              value={formData.cpf} 
+              onChange={e => setFormData({...formData, cpf: e.target.value})} 
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Endereço Completo</Label>
+            <textarea 
+              value={formData.endereco} 
+              onChange={e => setFormData({...formData, endereco: e.target.value})} 
+              className="w-full flex min-h-[80px] rounded-md border border-gray-200 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 

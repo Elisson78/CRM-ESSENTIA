@@ -14,6 +14,7 @@ import {
   LogOut,
   Home,
   User,
+  Settings,
 } from "lucide-react";
 import { usePathname } from 'next/navigation';
 
@@ -30,6 +31,7 @@ export const AdminSidebar: React.FC = () => {
     { icon: Heart, label: "Clientes", href: "/admin/clientes" },
     { icon: MapPin, label: "Passeios", href: "/admin/passeios" },
     { icon: DollarSign, label: "Financeiro", href: "/admin/financeiro" },
+    { icon: Settings, label: "Configurações", href: "/admin/configuracoes", adminOnly: true },
   ];
 
   // Filtrar itens baseado no tipo de usuário

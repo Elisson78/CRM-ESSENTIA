@@ -15,6 +15,7 @@ import {
   DollarSign,
   LogOut,
   User,
+  Settings,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,6 +43,7 @@ export const AdminMobileNav: React.FC<MobileNavProps> = ({
     { icon: Heart, label: "Clientes", href: "/admin/clientes" },
     { icon: MapPin, label: "Passeios", href: "/admin/passeios" },
     { icon: DollarSign, label: "Financeiro", href: "/admin/financeiro" },
+    { icon: Settings, label: "Configurações", href: "/admin/configuracoes", adminOnly: true },
   ];
 
   // Filtrar itens baseado no tipo de usuário
