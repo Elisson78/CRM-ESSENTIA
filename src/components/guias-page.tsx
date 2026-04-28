@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import AddGuiaModal from "./add-guia-modal";
+
 
 interface Guia {
   id: string;
@@ -154,58 +156,59 @@ const GuiasPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState("Todos os Status");
   const [guiasData, setGuiasData] = useState<Guia[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  const fetchGuias = async () => {
+    try {
+      const response = await fetch('/api/guias');
+      if (response.ok) {
+        const data = await response.json();
+        const formattedGuias: Guia[] = data.map((guia: any) => {
+          // Função para tratar especialidades e idiomas
+          const parseArrayField = (field: any): string[] => {
+            if (!field) return [];
+            if (Array.isArray(field)) return field;
+            if (typeof field === 'string') {
+              try {
+                // Tenta fazer parse JSON primeiro
+                const parsed = JSON.parse(field);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch {
+                // Se não for JSON válido, trata como string simples
+                return field.split(',').map(item => item.trim()).filter(item => item);
+              }
+            }
+            return [];
+          };
+
+          return {
+            id: guia.id,
+            nome: guia.nome,
+            email: guia.email,
+            telefone: guia.telefone,
+            especialidades: parseArrayField(guia.especialidades),
+            idiomas: parseArrayField(guia.idiomas),
+            avaliacaoMedia: guia.avaliacao_media || 0,
+            totalAvaliacoes: guia.total_avaliacoes || 0,
+            passeiosRealizados: guia.passeios_realizados || 0,
+            comissaoTotal: guia.comissao_total || 0,
+            status: guia.status === "ativo" ? "Ativo" : "Inativo",
+            dataRegistro: guia.criado_em,
+            proximoPasseio: guia.proximo_passeio
+          };
+        });
+        setGuiasData(formattedGuias);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar guias:', error);
+      toast.error('Erro ao carregar guias');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Carregar guias da API
   useEffect(() => {
-    const fetchGuias = async () => {
-      try {
-        const response = await fetch('/api/guias');
-        if (response.ok) {
-          const data = await response.json();
-          const formattedGuias: Guia[] = data.map((guia: any) => {
-            // Função para tratar especialidades e idiomas
-            const parseArrayField = (field: any): string[] => {
-              if (!field) return [];
-              if (Array.isArray(field)) return field;
-              if (typeof field === 'string') {
-                try {
-                  // Tenta fazer parse JSON primeiro
-                  const parsed = JSON.parse(field);
-                  return Array.isArray(parsed) ? parsed : [];
-                } catch {
-                  // Se não for JSON válido, trata como string simples
-                  return field.split(',').map(item => item.trim()).filter(item => item);
-                }
-              }
-              return [];
-            };
-
-            return {
-              id: guia.id,
-              nome: guia.nome,
-              email: guia.email,
-              telefone: guia.telefone,
-              especialidades: parseArrayField(guia.especialidades),
-              idiomas: parseArrayField(guia.idiomas),
-              avaliacaoMedia: guia.avaliacao_media || 0,
-              totalAvaliacoes: guia.total_avaliacoes || 0,
-              passeiosRealizados: guia.passeios_realizados || 0,
-              comissaoTotal: guia.comissao_total || 0,
-              status: guia.status === "ativo" ? "Ativo" : "Inativo",
-              dataRegistro: guia.criado_em,
-              proximoPasseio: guia.proximo_passeio
-            };
-          });
-          setGuiasData(formattedGuias);
-        }
-      } catch (error) {
-        console.error('Erro ao carregar guias:', error);
-        toast.error('Erro ao carregar guias');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchGuias();
   }, []);
 
@@ -248,7 +251,10 @@ const GuiasPage: React.FC = () => {
             <Download className="h-4 w-4 mr-2" />
             Exportar Lista
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Button 
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => setIsAddModalOpen(true)}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Novo Guia
           </Button>
@@ -392,6 +398,12 @@ const GuiasPage: React.FC = () => {
           </CardContent>
         </Card>
       </motion.div>
+
+      <AddGuiaModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={fetchGuias} 
+      />
     </div>
   );
 };
