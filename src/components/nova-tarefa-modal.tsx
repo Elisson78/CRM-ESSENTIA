@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, CalendarDays, User, MapPin, DollarSign, Users, X } from "lucide-react";
+import { Calendar, CalendarDays, User, MapPin, DollarSign, Users, X, Building2, Printer } from "lucide-react";
 
-import type { NovaTarefaData, Passeio, Cliente, Guia } from "@/types/agendamentos";
+import type { NovaTarefaData, Passeio, Cliente, Guia, Hotel, Local } from "@/types/agendamentos";
+import VoucherImpressao from "./voucher-impressao";
 
 interface NovaTarefaModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface NovaTarefaModalProps {
   passeios: Passeio[];
   clientes: Cliente[];
   guias: Guia[];
+  hoteis?: Hotel[];
+  locais?: Local[];
   editingTarefa?: any;
   isSubmitting?: boolean;
   onConvert?: (id: string) => void;
@@ -28,6 +31,8 @@ const emptyForm: NovaTarefaData = {
   passeioId: "",
   clienteId: undefined,
   guiaId: undefined,
+  hotelId: undefined,
+  localId: undefined,
   data: "",
   numeroPessoas: 1,
   observacoes: "",
@@ -41,6 +46,8 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
   passeios,
   clientes,
   guias,
+  hoteis = [],
+  locais = [],
   editingTarefa,
   isSubmitting = false,
   onConvert,
@@ -66,6 +73,8 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
         passeioId: editingTarefa.passeio_id,
         clienteId: editingTarefa.cliente_id || undefined,
         guiaId: editingTarefa.guia_id || undefined,
+        hotelId: editingTarefa.hotel_id || undefined,
+        localId: editingTarefa.local_id || undefined,
         data: formatDateForInput(editingTarefa.data_passeio),
         numeroPessoas: editingTarefa.numero_pessoas,
         observacoes: editingTarefa.observacoes || "",
@@ -83,6 +92,11 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
   }, [isOpen, editingTarefa]);
 
   const selectedPasseio = passeios.find(p => p.id === formData.passeioId);
+  const selectedHotel = hoteis.find(h => h.id === formData.hotelId);
+  const selectedLocal = locais.find(l => l.id === formData.localId);
+  const selectedGuia = guias.find(g => g.id === formData.guiaId);
+  const selectedCliente = clientes.find(c => c.id === formData.clienteId);
+
   const numeroPessoas = Number(formData.numeroPessoas ?? 1);
   const comissaoPercentual = Number(formData.comissaoPercentual ?? 30);
 
@@ -95,11 +109,26 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
       const submitData: NovaTarefaData = {
         ...formData,
         clienteId: formData.clienteId === "none" ? undefined : formData.clienteId,
-        guiaId: formData.guiaId === "none" ? undefined : formData.guiaId
+        guiaId: formData.guiaId === "none" ? undefined : formData.guiaId,
+        hotelId: formData.hotelId === "none" ? undefined : formData.hotelId,
+        localId: formData.localId === "none" ? undefined : formData.localId,
       };
       await onSubmit(submitData);
     }
   };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const currentTarefaForPrint = editingTarefa ? {
+    ...editingTarefa,
+    passeio_nome: selectedPasseio?.nome || editingTarefa.passeio_nome,
+    hotel_nome: selectedHotel?.nome || editingTarefa.hotel_nome,
+    local_nome: selectedLocal?.nome || editingTarefa.local_nome,
+    guia_nome: selectedGuia?.nome || editingTarefa.guia_nome,
+    cliente_nome: selectedCliente?.nome || editingTarefa.cliente_nome,
+  } : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -167,6 +196,61 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
                             {Array.isArray(guia.especialidades) ? guia.especialidades.join(", ") : guia.especialidades || "N/A"}
                           </span>
                         </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Hotel */}
+              <div className="space-y-2">
+                <Label htmlFor="hotel" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Hotel (Opcional)
+                </Label>
+                <Select
+                  value={formData.hotelId || "none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, hotelId: value === "none" ? undefined : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um hotel (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-gray-500">Nenhum hotel selecionado</span>
+                    </SelectItem>
+                    {hoteis.map((hotel) => (
+                      <SelectItem key={hotel.id} value={hotel.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{hotel.nome}</span>
+                          <span className="text-sm text-gray-500">{hotel.cidade}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Local */}
+              <div className="space-y-2">
+                <Label htmlFor="local" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Local/Destino (Opcional)
+                </Label>
+                <Select
+                  value={formData.localId || "none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, localId: value === "none" ? undefined : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um local (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="text-gray-500">Nenhum local selecionado</span>
+                    </SelectItem>
+                    {locais.map((local) => (
+                      <SelectItem key={local.id} value={local.id}>
+                        <span className="font-medium">{local.nome}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -318,6 +402,17 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
               )}
             </div>
             <div className="flex gap-2">
+              {editingTarefa && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrint}
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50 flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir p/ Guia
+                </Button>
+              )}
               <Button type="button" variant="outline" onClick={onClose} className="border-gray-300">
                 Cancelar
               </Button>
@@ -335,6 +430,13 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
             </div>
           </div>
         </form>
+
+        {/* Componente Invisível para Impressão */}
+        {currentTarefaForPrint && (
+          <div className="hidden print:block">
+            <VoucherImpressao tarefa={currentTarefaForPrint} />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

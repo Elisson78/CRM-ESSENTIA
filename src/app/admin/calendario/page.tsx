@@ -12,6 +12,8 @@ export default async function CalendarioPage() {
       initialClientes={data.clientes}
       initialGuias={data.guias}
       initialColumns={data.columns}
+      initialHoteis={data.hoteis}
+      initialLocais={data.locais}
     />
   );
 }

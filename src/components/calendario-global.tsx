@@ -16,18 +16,17 @@ import {
   Users,
   DollarSign,
   Clock,
-  Home,
+  Building2,
   CalendarDays,
-  Users as UsersIcon,
   Heart,
-  MapPin as MapPinIcon,
-  DollarSign as DollarSignIcon,
   LogOut,
-  Edit2
+  Edit2,
+  Printer
 } from "lucide-react";
 
-import type { Tarefa, Passeio, Cliente, Guia, KanbanColumn, Status, NovaTarefaData } from "@/types/agendamentos";
+import type { Tarefa, Passeio, Cliente, Guia, KanbanColumn, Status, NovaTarefaData, Hotel, Local } from "@/types/agendamentos";
 import NovaTarefaModal from "./nova-tarefa-modal";
+import VoucherImpressao from "./voucher-impressao";
 import { saveAgendamentoAction, deleteAgendamentoAction } from "@/app/admin/agendamentos/actions";
 
 interface CalendarioGlobalProps {
@@ -36,6 +35,8 @@ interface CalendarioGlobalProps {
   initialClientes: Cliente[];
   initialGuias: Guia[];
   initialColumns: KanbanColumn[];
+  initialHoteis?: Hotel[];
+  initialLocais?: Local[];
 }
 
 const CalendarioGlobal: React.FC<CalendarioGlobalProps> = ({
@@ -43,7 +44,9 @@ const CalendarioGlobal: React.FC<CalendarioGlobalProps> = ({
   initialPasseios,
   initialClientes,
   initialGuias,
-  initialColumns
+  initialColumns,
+  initialHoteis = [],
+  initialLocais = []
 }) => {
   const { user, logout } = useAuth();
   const isClient = useIsClient();
@@ -54,6 +57,7 @@ const CalendarioGlobal: React.FC<CalendarioGlobalProps> = ({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTarefa, setEditingTarefa] = useState<Tarefa | null>(null);
+  const [taskToPrint, setTaskToPrint] = useState<Tarefa | null>(null);
 
   // Sincronizar dados iniciais se eles mudarem
   useEffect(() => {
@@ -128,6 +132,14 @@ const CalendarioGlobal: React.FC<CalendarioGlobalProps> = ({
   const handleEditTask = (task: Tarefa) => {
     setEditingTarefa(task);
     setIsModalOpen(true);
+  };
+
+  const handleQuickPrint = (e: React.MouseEvent, tarefa: Tarefa) => {
+    e.stopPropagation();
+    setTaskToPrint(tarefa);
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   const handleSaveTask = async (data: NovaTarefaData) => {
@@ -247,7 +259,20 @@ const CalendarioGlobal: React.FC<CalendarioGlobalProps> = ({
                             <div className="truncate opacity-90">
                               {evento.cliente_nome?.split(' ')[0]} ({evento.numero_pessoas}p)
                             </div>
-                            <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                             {evento.hotel_nome && (
+                              <div className="truncate text-[8px] mt-0.5 font-medium border-t border-black/5 pt-0.5 flex items-center gap-0.5">
+                                <Building2 className="h-2 w-2" />
+                                {evento.hotel_nome}
+                              </div>
+                            )}
+                            <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                              <button 
+                                onClick={(e) => handleQuickPrint(e, evento)}
+                                className="p-0.5 hover:bg-black/10 rounded"
+                                title="Imprimir Voucher"
+                              >
+                                <Printer className="h-2 w-2" />
+                              </button>
                               <Edit2 className="h-2 w-2" />
                             </div>
                           </div>
@@ -294,9 +319,18 @@ const CalendarioGlobal: React.FC<CalendarioGlobalProps> = ({
         passeios={initialPasseios}
         clientes={initialClientes}
         guias={initialGuias}
+        hoteis={initialHoteis}
+        locais={initialLocais}
         editingTarefa={editingTarefa}
         isSubmitting={isPending}
       />
+
+      {/* Componente Invisível para Impressão Rápida */}
+      {taskToPrint && (
+        <div className="hidden print:block">
+          <VoucherImpressao tarefa={taskToPrint} />
+        </div>
+      )}
     </div>
   );
 };

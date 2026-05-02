@@ -10,11 +10,27 @@ export interface KanbanColumn {
     ativo: boolean;
 }
 
+export interface Hotel {
+    id: string;
+    nome: string;
+    endereco?: string;
+    cidade?: string;
+    telefone?: string;
+}
+
+export interface Local {
+    id: string;
+    nome: string;
+    descricao?: string;
+}
+
 export interface Tarefa {
     id: string;
     passeio_id: string;
     cliente_id: string | null;
     guia_id?: string | null;
+    hotel_id?: string | null;
+    local_id?: string | null;
     data_passeio: string;
     numero_pessoas: number;
     valor_total: number;
@@ -25,6 +41,8 @@ export interface Tarefa {
     passeio_nome?: string | null;
     cliente_nome?: string | null;
     guia_nome?: string | null;
+    hotel_nome?: string | null;
+    local_nome?: string | null;
     isLead?: boolean;
     leadEmail?: string;
     leadPhone?: string | null;
@@ -58,8 +76,11 @@ export interface NovaTarefaData {
     data: string;
     clienteId?: string;
     guiaId?: string;
+    hotelId?: string;
+    localId?: string;
     numeroPessoas?: number | string;
     observacoes?: string;
     comissaoPercentual?: number;
     status?: Status;
 }
+

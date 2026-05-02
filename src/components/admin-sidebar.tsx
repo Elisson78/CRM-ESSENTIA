@@ -29,6 +29,8 @@ export const AdminSidebar: React.FC = () => {
     { icon: User, label: "Usuários", href: "/admin/usuarios", adminOnly: true },
     { icon: Users, label: "Guias", href: "/admin/guias" },
     { icon: Heart, label: "Clientes", href: "/admin/clientes" },
+    { icon: Home, label: "Hotéis", href: "/admin/hoteis" },
+    { icon: MapPin, label: "Locais", href: "/admin/locais" },
     { icon: MapPin, label: "Passeios", href: "/admin/passeios" },
     { icon: DollarSign, label: "Financeiro", href: "/admin/financeiro" },
     { icon: Settings, label: "Configurações", href: "/admin/configuracoes", adminOnly: true },

@@ -34,21 +34,25 @@ export async function getBoardData() {
         console.log('🔄 Fetching Agendamentos Board Data (Server Action)...');
 
         // Parallel data fetching
-        const [agendamentosRes, leadsRes, passeiosRes, clientesRes, guiasRes, columnsRes] = await Promise.all([
+        const [agendamentosRes, leadsRes, passeiosRes, clientesRes, guiasRes, columnsRes, hoteisRes, locaisRes] = await Promise.all([
             db.query(`
         SELECT 
-          a.id, a.passeio_id, a.cliente_id, a.guia_id, 
+          a.id, a.passeio_id, a.cliente_id, a.guia_id, a.hotel_id, a.local_id,
           a.data_passeio, 
           a.numero_pessoas, a.valor_total, a.valor_comissao, a.percentual_comissao, 
           a.status, a.observacoes, 
           a.criado_em, a.atualizado_em,
           p.nome as passeio_nome,
           c.nome as cliente_nome,
-          g.nome as guia_nome
+          g.nome as guia_nome,
+          h.nome as hotel_nome,
+          l.nome as local_nome
         FROM agendamentos a
         LEFT JOIN passeios p ON a.passeio_id = p.id
         LEFT JOIN clientes c ON a.cliente_id = c.id
         LEFT JOIN guias g ON a.guia_id = g.id
+        LEFT JOIN hoteis h ON a.hotel_id = h.id
+        LEFT JOIN locais l ON a.local_id = l.id
         ORDER BY a.criado_em DESC
       `),
             // Fetch Leads (only active ones)
@@ -56,7 +60,9 @@ export async function getBoardData() {
             db.query('SELECT * FROM passeios ORDER BY nome ASC'),
             db.query('SELECT * FROM clientes ORDER BY nome ASC'),
             db.query('SELECT * FROM guias ORDER BY nome ASC'),
-            db.query('SELECT * FROM kanban_columns WHERE ativo = 1 ORDER BY order_index ASC')
+            db.query('SELECT * FROM kanban_columns WHERE ativo = 1 ORDER BY order_index ASC'),
+            db.query('SELECT * FROM hoteis ORDER BY nome ASC'),
+            db.query('SELECT * FROM locais ORDER BY nome ASC')
         ]);
 
         const agendamentos: Tarefa[] = agendamentosRes.rows.map(row => ({
@@ -64,6 +70,8 @@ export async function getBoardData() {
             passeio_id: row.passeio_id,
             cliente_id: toStringOrNull(row.cliente_id),
             guia_id: toStringOrNull(row.guia_id),
+            hotel_id: toStringOrNull(row.hotel_id),
+            local_id: toStringOrNull(row.local_id),
             data_passeio: String(row.data_passeio),
             numero_pessoas: toNumber(row.numero_pessoas, 1),
             valor_total: toNumber(row.valor_total, 0),
@@ -74,6 +82,8 @@ export async function getBoardData() {
             passeio_nome: toStringOrNull(row.passeio_nome),
             cliente_nome: toStringOrNull(row.cliente_nome),
             guia_nome: toStringOrNull(row.guia_nome),
+            hotel_nome: toStringOrNull(row.hotel_nome),
+            local_nome: toStringOrNull(row.local_nome),
         }));
 
         // Convert Leads to "Tarefas" (Cards)
@@ -82,18 +92,22 @@ export async function getBoardData() {
             passeio_id: row.passeio_id,
             cliente_id: null,
             guia_id: null,
+            hotel_id: null,
+            local_id: null,
             data_passeio: row.data_passeio ? String(row.data_passeio) : '',
             numero_pessoas: toNumber(row.numero_pessoas, 1),
-            valor_total: 0, // Leads might not have calculated total yet, or we can fetch. Assuming 0 for now.
+            valor_total: 0, 
             valor_comissao: 0,
             percentual_comissao: 0,
-            status: row.status || 'novo', // Use status from DB
+            status: row.status || 'novo', 
             observacoes: toStringOrNull(row.observacoes),
             passeio_nome: toStringOrNull(row.passeio_nome) || 'Passeio Solicitado',
-            cliente_nome: toStringOrNull(row.nome) + " (Lead)", // Mark as lead
+            cliente_nome: toStringOrNull(row.nome) + " (Lead)", 
             guia_nome: null,
-            isLead: true, // Marker for frontend
-            leadEmail: row.email, // Store extra data if needed
+            hotel_nome: null,
+            local_nome: null,
+            isLead: true, 
+            leadEmail: row.email, 
             leadPhone: row.telefone
         }));
 
@@ -131,6 +145,20 @@ export async function getBoardData() {
             ativo: row.ativo === 1
         }));
 
+        const hoteis: Hotel[] = hoteisRes.rows.map(row => ({
+            id: String(row.id),
+            nome: String(row.nome),
+            endereco: String(row.endereco || ''),
+            cidade: String(row.cidade || ''),
+            telefone: String(row.telefone || ''),
+        }));
+
+        const locais: Local[] = locaisRes.rows.map(row => ({
+            id: String(row.id),
+            nome: String(row.nome),
+            descricao: String(row.descricao || ''),
+        }));
+
         // Ensure "Novo / Leads" column exists
         if (!columns.find(c => c.id === 'novo')) {
             columns.unshift({
@@ -143,7 +171,7 @@ export async function getBoardData() {
         }
 
         // Merge agendamentos + leads
-        return { agendamentos: [...leads, ...agendamentos], passeios, clientes, guias, columns };
+        return { agendamentos: [...leads, ...agendamentos], passeios, clientes, guias, columns, hoteis, locais };
     } catch (error) {
         console.error('❌ Error in getBoardData:', error);
         throw new Error('Falha ao carregar dados do quadro.');
@@ -214,7 +242,7 @@ export async function convertLeadAction(id: string) {
             lead.numero_pessoas,
             valorTotal,
             lead.observacoes || 'Convertido manualmente de Lead',
-            'em_progresso' // Status padrão para novos agendamentos
+            'em_progresso' 
         ]);
         console.log('✅ Agendamento criado:', agendamentoId);
 
@@ -243,6 +271,8 @@ export async function saveAgendamentoAction(data: NovaTarefaData, id?: string) {
         const percentualComissao = Number(data.comissaoPercentual ?? 30);
         const clienteId = normalizeNullable(data.clienteId);
         const guiaId = normalizeNullable(data.guiaId);
+        const hotelId = normalizeNullable(data.hotelId);
+        const localId = normalizeNullable(data.localId);
         const observacoes = data.observacoes ?? null;
 
         // Get Ride Price for calculation
@@ -257,12 +287,12 @@ export async function saveAgendamentoAction(data: NovaTarefaData, id?: string) {
             // UPDATE
             await db.query(`
         UPDATE agendamentos SET 
-          passeio_id = $1, cliente_id = $2, guia_id = $3, data_passeio = $4,
-          numero_pessoas = $5, valor_total = $6, valor_comissao = $7, 
-          percentual_comissao = $8, observacoes = $9, atualizado_em = NOW()
-        WHERE id = $10
+          passeio_id = $1, cliente_id = $2, guia_id = $3, hotel_id = $4, local_id = $5, data_passeio = $6,
+          numero_pessoas = $7, valor_total = $8, valor_comissao = $9, 
+          percentual_comissao = $10, observacoes = $11, atualizado_em = NOW()
+        WHERE id = $12
       `, [
-                passeioId, clienteId, guiaId, dataPasseio,
+                passeioId, clienteId, guiaId, hotelId, localId, dataPasseio,
                 numeroPessoas, valorTotal, valorComissao, percentualComissao, observacoes,
                 id
             ]);
@@ -272,22 +302,24 @@ export async function saveAgendamentoAction(data: NovaTarefaData, id?: string) {
             const status = data.status || 'em_progresso';
             await db.query(`
         INSERT INTO agendamentos (
-          id, passeio_id, cliente_id, guia_id, data_passeio, numero_pessoas, 
+          id, passeio_id, cliente_id, guia_id, hotel_id, local_id, data_passeio, numero_pessoas, 
           valor_total, valor_comissao, percentual_comissao, observacoes, status, criado_em, atualizado_em
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
       `, [
-                newId, passeioId, clienteId, guiaId, dataPasseio,
+                newId, passeioId, clienteId, guiaId, hotelId, localId, dataPasseio,
                 numeroPessoas, valorTotal, valorComissao, percentualComissao, observacoes, status
             ]);
         }
 
         revalidatePath('/admin/agendamentos');
+        revalidatePath('/admin/calendario');
         return { success: true };
     } catch (error) {
         console.error('Error saving agendamento:', error);
         return { success: false, error: 'Erro ao salvar agendamento' };
     }
 }
+
 
 export async function deleteAgendamentoAction(id: string) {
     try {
