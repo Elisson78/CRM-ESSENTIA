@@ -5,7 +5,7 @@ import { getBoardData } from "./actions";
 // Force dynamic because we are fetching specific user data (although auth might handle it, it's safer for admin panels)
 
 export default async function Agendamentos() {
-  const { agendamentos, passeios, clientes, guias, columns } = await getBoardData();
+  const { agendamentos, passeios, clientes, guias, columns, hoteis, locais } = await getBoardData();
 
   return (
     <AgendamentosClientPage
@@ -14,6 +14,8 @@ export default async function Agendamentos() {
       clientes={clientes}
       guias={guias}
       columns={columns}
+      hoteis={hoteis}
+      locais={locais}
     />
   );
 }

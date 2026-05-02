@@ -26,7 +26,7 @@ import {
   deleteColumnAction,
   convertLeadAction
 } from "@/app/admin/agendamentos/actions";
-import type { Tarefa, Passeio, Cliente, Guia, NovaTarefaData, Status, KanbanColumn } from "@/types/agendamentos";
+import type { Tarefa, Passeio, Cliente, Guia, NovaTarefaData, Status, KanbanColumn, Hotel, Local } from "@/types/agendamentos";
 
 const COLOR_MAP: Record<string, string> = {
   purple: "bg-purple-100 border-purple-200 text-purple-900",
@@ -241,19 +241,19 @@ const ColumnManagerModal: React.FC<{
 };
 
 interface AgendamentosClientPageProps {
-  initialAgendamentos: Tarefa[];
-  passeios: Passeio[];
   clientes: Cliente[];
   guias: Guia[];
   columns: KanbanColumn[];
+  hoteis?: Hotel[];
+  locais?: Local[];
 }
 
 const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
-  initialAgendamentos,
-  passeios,
   clientes,
   guias,
-  columns: serverColumns
+  columns: serverColumns,
+  hoteis = [],
+  locais = []
 }) => {
   const { user, logout } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -475,6 +475,8 @@ const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
         passeios={passeios}
         clientes={clientes}
         guias={guias}
+        hoteis={hoteis}
+        locais={locais}
         editingTarefa={editingTarefa}
         isSubmitting={isPending}
         onConvert={handleConvertLead}
