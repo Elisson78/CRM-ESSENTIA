@@ -241,6 +241,8 @@ const ColumnManagerModal: React.FC<{
 };
 
 interface AgendamentosClientPageProps {
+  initialAgendamentos: Tarefa[];
+  passeios: Passeio[];
   clientes: Cliente[];
   guias: Guia[];
   columns: KanbanColumn[];
@@ -249,6 +251,8 @@ interface AgendamentosClientPageProps {
 }
 
 const AgendamentosClientPage: React.FC<AgendamentosClientPageProps> = ({
+  initialAgendamentos,
+  passeios,
   clientes,
   guias,
   columns: serverColumns,

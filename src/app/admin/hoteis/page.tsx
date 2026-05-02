@@ -67,10 +67,10 @@ const HoteisPage: React.FC = () => {
         }
     };
 
-    const filteredHoteis = hoteis.filter(h => 
-        h.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const filteredHoteis = Array.isArray(hoteis) ? hoteis.filter(h => 
+        h.nome?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         h.cidade?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    ) : [];
 
     return (
         <div className="p-4 lg:p-6">

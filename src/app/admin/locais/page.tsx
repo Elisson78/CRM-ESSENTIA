@@ -66,9 +66,9 @@ const LocaisPage: React.FC = () => {
         }
     };
 
-    const filteredLocais = locais.filter(l => 
-        l.nome.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredLocais = Array.isArray(locais) ? locais.filter(l => 
+        l.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+    ) : [];
 
     return (
         <div className="p-4 lg:p-6">
