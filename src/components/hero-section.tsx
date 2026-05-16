@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
 import { Button } from "./ui/button";
+import Link from "next/link";
 
 export default function HeroSection() {
   const scrollToSection = (sectionId: string) => {
@@ -25,13 +26,13 @@ export default function HeroSection() {
           transition={{ duration: 0.8 }}
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Descubra a Magia da
-            <span className="text-orange-300"> Itália</span>
+            Descubra a Magia de
+            <span className="text-orange-300"> São Tomé e Príncipe</span>
           </h1>
 
           <p className="text-lg md:text-xl mb-8 text-blue-100 max-w-2xl mx-auto">
-            Explore a Itália com quem entende. Roteiros únicos, guias locais
-            experientes e experiências autênticas que você nunca esquecerá.
+            Explore as ilhas maravilhosas com quem entende. Roteiros únicos,
+            guias locais experientes e a verdadeira essência da África central.
           </p>
 
           <motion.div
@@ -42,9 +43,12 @@ export default function HeroSection() {
             <Button
               size="lg"
               className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all"
-              onClick={() => scrollToSection('roteiros')}
+              onClick={() => {
+                window.location.hash = "passeios";
+                document.getElementById("destinos")?.scrollIntoView({ behavior: "smooth" });
+              }}
             >
-              Conheça os Roteiros
+              Sua Aventura Começa Aqui!
             </Button>
           </motion.div>
         </motion.div>

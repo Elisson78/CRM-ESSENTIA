@@ -156,7 +156,7 @@ const TaskCard: React.FC<{
 
         <div className="flex justify-between text-xs text-gray-500 pt-2 border-t mt-2">
           <span>{tarefa.numero_pessoas} pessoas</span>
-          <span className="font-medium">R$ {(tarefa.valor_total || 0).toFixed(2)}</span>
+          <span className="font-medium">€ {(tarefa.valor_total || 0).toFixed(2)}</span>
         </div>
       </div>
     )}

@@ -9,13 +9,13 @@ export async function POST() {
 
     const users = [
       {
-        email: "admin@essentia.com",
-        nome: "Administrador Essentia",
+        email: "admin@exploraaventura.com.br",
+        nome: "Administrador Explora Aventura",
         user_type: "admin",
         password: "admin123"
       },
       {
-        email: "guia@essentia.com",
+        email: "guia@exploraaventura.com.br",
         nome: "Guia Local",
         user_type: "guia",
         password: "guia123"

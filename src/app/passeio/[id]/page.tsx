@@ -178,7 +178,7 @@ export default function PasseioDetalhes() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-40">
+      <div className="bg-white border-b sticky top-[80px] z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/">
@@ -205,7 +205,7 @@ export default function PasseioDetalhes() {
           <div className="lg:col-span-2 space-y-6">
             {/* Hero do passeio */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-lg overflow-hidden shadow-sm"
             >
@@ -393,8 +393,8 @@ export default function PasseioDetalhes() {
 
           {/* Sidebar - Formulário de reserva */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="lg:col-span-1"
           >
             <Card className="sticky top-24">

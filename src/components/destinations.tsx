@@ -7,6 +7,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { MapPin, Star } from "lucide-react";
 import PasseiosCards from "./passeios-cards";
+import { useEffect } from "react";
 
 interface Destination {
   id: string;
@@ -21,51 +22,51 @@ export default function Destinations() {
   const [destinations, setDestinations] = useState<Destination[]>([
     {
       id: "1",
-      name: "Roma",
-      description: "A cidade eterna com seus monumentos históricos e arquitetura imperial",
-      image: "🏛️",
+      name: "Ilhéu das Rolas",
+      description: "Onde o Equador divide o mundo, com praias de águas cristalinas",
+      image: "🏝️",
       rating: 4.9,
-      highlights: ["Coliseu", "Vaticano", "Fontana di Trevi"]
+      highlights: ["Linha do Equador", "Praia Café", "Ponta do Sol"]
     },
     {
       id: "2", 
-      name: "Veneza",
-      description: "A cidade dos canais, com suas gôndolas e palácios únicos",
-      image: "🚤",
+      name: "Lagoa Azul",
+      description: "Baía deslumbrante com águas azul-turquesa e baobás centenários",
+      image: "🌊",
       rating: 4.8,
-      highlights: ["Praça São Marcos", "Ponte dos Suspiros", "Murano"]
+      highlights: ["Mergulho", "Baobás", "Farol da Lagoa"]
     },
     {
       id: "3",
-      name: "Florença",
-      description: "Berço do Renascimento, com arte e arquitetura incomparáveis",
-      image: "🎨",
+      name: "Praia Jalé",
+      description: "Santuário ecológico famoso pela desova de tartarugas marinhas",
+      image: "🐢",
       rating: 4.9,
-      highlights: ["Duomo", "Uffizi", "Ponte Vecchio"]
+      highlights: ["Eco-turismo", "Desova de tartarugas", "Praia Selvagem"]
     },
     {
       id: "4",
-      name: "Milão",
-      description: "Capital da moda e centro financeiro da Itália",
-      image: "👗",
+      name: "Pico Cão Grande",
+      description: "O monumento natural mais icônico, uma agulha vulcânica majestosa",
+      image: "🌋",
       rating: 4.6,
-      highlights: ["Duomo", "La Scala", "Quadrilátero da Moda"]
+      highlights: ["Fotografia", "Obo National Park", "Trilhas"]
     },
     {
       id: "5",
-      name: "Pisa",
-      description: "Famosa pela sua torre inclinada e rica história medieval",
-      image: "🗼",
-      rating: 4.5,
-      highlights: ["Torre de Pisa", "Catedral", "Piazza dei Miracoli"]
+      name: "Roça Monte Café",
+      description: "A história e o aroma do melhor café do mundo nas montanhas",
+      image: "☕",
+      rating: 4.7,
+      highlights: ["Museu do Café", "Degustação", "História Colonial"]
     },
     {
       id: "6",
-      name: "Costa Amalfitana",
-      description: "Litoral deslumbrante com cidades pitorescas e vistas espetaculares",
+      name: "Boca do Inferno",
+      description: "Espetáculo natural onde as ondas batem com força nos canais de rocha",
       image: "🌊",
-      rating: 4.8,
-      highlights: ["Positano", "Amalfi", "Ravello"]
+      rating: 4.5,
+      highlights: ["Cascata", "Fenômeno Natural", "Geologia"]
     }
   ]);
 
@@ -81,6 +82,24 @@ export default function Destinations() {
 
   const [mostrarPasseios, setMostrarPasseios] = useState(false);
 
+  useEffect(() => {
+    const checkHash = () => {
+      const hash = window.location.hash;
+      if (hash === "#passeios") {
+        setMostrarPasseios(true);
+      } else if (hash === "#destinos" || hash === "") {
+        setMostrarPasseios(false);
+      }
+    };
+
+    checkHash();
+    window.addEventListener("hashchange", checkHash);
+    
+    return () => {
+      window.removeEventListener("hashchange", checkHash);
+    };
+  }, []);
+
   return (
     <section id="destinos" className="py-20 bg-white">
       <div className="container mx-auto px-4">
@@ -92,7 +111,7 @@ export default function Destinations() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800">
-            {mostrarPasseios ? "Nossos Passeios Disponíveis" : "Os destinos mais incríveis da Itália"}
+            {mostrarPasseios ? "Nossos Passeios Disponíveis" : "Os destinos mais incríveis de São Tomé e Príncipe"}
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-4">
             {mostrarPasseios 

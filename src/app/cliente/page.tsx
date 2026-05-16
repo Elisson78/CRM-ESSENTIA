@@ -132,7 +132,7 @@ export default function ClienteDashboard() {
         <div className="mt-8">
           <Card>
             <CardHeader>
-              <CardTitle>Bem-vindo à ESSENTIA TRAVEL!</CardTitle>
+              <CardTitle>Bem-vindo à EXPLORA AVENTURA!</CardTitle>
               <CardDescription>
                 Sua plataforma de turismo personalizado
               </CardDescription>

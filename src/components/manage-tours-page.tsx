@@ -438,7 +438,7 @@ const ManageToursPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-gray-900 font-medium">
-                          R$ {Number(tour.price || 0).toFixed(2)}
+                          € {Number(tour.price || 0).toFixed(2)}
                         </span>
                       </td>
                       <td className="px-6 py-4">

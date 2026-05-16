@@ -14,19 +14,19 @@ const VoucherImpressao: React.FC<VoucherImpressaoProps> = ({ tarefa }) => {
             {/* Header */}
             <div className="flex justify-between items-start border-b-2 border-gray-800 pb-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tighter text-blue-900 mb-1">ESSENTIA CRM</h1>
+                    <h1 className="text-3xl font-extrabold tracking-tighter text-orange-600 mb-1">EXPLORA AVENTURA CRM</h1>
                     <p className="text-sm text-gray-600 uppercase tracking-widest font-semibold">Ordem de Serviço / Voucher</p>
                 </div>
                 <div className="text-right">
                     <p className="text-sm font-bold">Data de Emissão:</p>
-                    <p className="text-sm">{new Date().toLocaleDateString('pt-BR')}</p>
+                    <p className="text-sm">{new Date().toLocaleDateString('pt-PT')}</p>
                     <p className="text-xs text-gray-500 mt-1">Ref: {tarefa.id.substring(0, 8).toUpperCase()}</p>
                 </div>
             </div>
 
             {/* Tour Info */}
-            <div className="mb-8 bg-blue-50 p-6 rounded-xl border border-blue-100">
-                <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+            <div className="mb-8 bg-orange-50 p-6 rounded-xl border border-orange-100">
+                <h2 className="text-xl font-bold text-orange-600 mb-4 flex items-center gap-2">
                     <Calendar className="h-5 w-5" />
                     Informações do Passeio
                 </h2>
@@ -38,7 +38,7 @@ const VoucherImpressao: React.FC<VoucherImpressaoProps> = ({ tarefa }) => {
                     <div>
                         <p className="text-xs text-gray-500 uppercase font-bold mb-1">Data e Hora</p>
                         <p className="text-lg font-semibold">
-                            {tarefa.data_passeio ? new Date(tarefa.data_passeio).toLocaleString('pt-BR', {
+                            {tarefa.data_passeio ? new Date(tarefa.data_passeio).toLocaleString('pt-PT', {
                                 dateStyle: 'long',
                                 timeStyle: 'short'
                             }) : 'N/A'}
@@ -59,7 +59,7 @@ const VoucherImpressao: React.FC<VoucherImpressaoProps> = ({ tarefa }) => {
             <div className="grid grid-cols-2 gap-8 mb-8">
                 <div className="border p-4 rounded-lg">
                     <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
-                        <Building2 className="h-4 w-4 text-blue-600" />
+                        <Building2 className="h-4 w-4 text-orange-600" />
                         HOTEL / PICKUP
                     </h3>
                     <p className="font-bold text-gray-900">{tarefa.hotel_nome || 'Não informado'}</p>
@@ -105,8 +105,8 @@ const VoucherImpressao: React.FC<VoucherImpressaoProps> = ({ tarefa }) => {
 
             {/* Footer */}
             <div className="mt-auto border-t pt-6 text-center text-xs text-gray-400">
-                <p>Este documento é uma confirmação de serviço gerada pelo Essentia CRM.</p>
-                <p className="mt-1">© 2026 Essentia Tour & Travel - Todos os direitos reservados.</p>
+                <p>Este documento é uma confirmação de serviço gerada pelo Explora Aventura CRM.</p>
+                <p className="mt-1">© 2026 Explora Aventura Tour & Travel - Todos os direitos reservados.</p>
             </div>
 
             {/* CSS para Impressão - Abordagem mais agressiva para garantir visibilidade */}

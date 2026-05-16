@@ -354,7 +354,7 @@ export const AdminDashboard: React.FC = () => {
                         Tarefa ID: {task.id}
                       </p>
                       <p className="text-xs text-gray-600">
-                        {task.people} pessoa(s) • R$ {task.value.toFixed(2)}
+                        {task.people} pessoa(s) • € {task.value.toFixed(2)}
                       </p>
                     </div>
                   </div>

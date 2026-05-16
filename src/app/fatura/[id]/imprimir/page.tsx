@@ -34,14 +34,14 @@ export default async function FaturaPrintPage(props: { params: Promise<{ id: str
 
   const configResult = await db.query('SELECT * FROM empresa_configuracoes WHERE id = 1');
   const empresa = configResult.rows[0] || {
-    razao_social: "Essentia Travel", slogan: "", email: "", telefone: "",
+    razao_social: "Explora Aventura Travel", slogan: "", email: "", telefone: "",
     p_iva: "", c_f: "", banco_nome: "", banco_conta: "", banco_pix: "", banco_beneficiario: ""
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+    return new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
   };
 
   const formatEuro = (value: number) => {
@@ -94,8 +94,8 @@ export default async function FaturaPrintPage(props: { params: Promise<{ id: str
           {/* Company Info */}
           <div className="flex flex-col">
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2 mb-2">
-              <span className="text-[#991b1b] text-3xl">✿</span>
-              {empresa.razao_social || 'Essentia CRM'}
+              <span className="text-[#ea580c] text-3xl">✿</span>
+              {empresa.razao_social || 'Explora Aventura CRM'}
             </h1>
             <div className="text-xs text-gray-500 font-bold mb-4 uppercase tracking-widest pl-1">
               {empresa.slogan}
@@ -128,7 +128,7 @@ export default async function FaturaPrintPage(props: { params: Promise<{ id: str
         {/* Client & Tax Info */}
         <div className="flex justify-between items-start mb-14">
           <div className="w-1/2">
-            <h3 className="text-[10px] font-bold tracking-widest text-[#991b1b] mb-3 uppercase">Faturado Para</h3>
+            <h3 className="text-[10px] font-bold tracking-widest text-[#ea580c] mb-3 uppercase">Faturado Para</h3>
             <div className="text-sm font-bold text-gray-900 mb-1.5 uppercase tracking-wide">
               {fatura.cliente_nome}
             </div>
@@ -142,7 +142,7 @@ export default async function FaturaPrintPage(props: { params: Promise<{ id: str
             )}
           </div>
           <div className="w-1/2 text-right">
-            <h3 className="text-[10px] font-bold tracking-widest text-[#991b1b] mb-3 uppercase">Dados Fiscais Emissor</h3>
+            <h3 className="text-[10px] font-bold tracking-widest text-[#ea580c] mb-3 uppercase">Dados Fiscais Emissor</h3>
             {empresa.p_iva && (
               <div className="text-xs text-gray-800 font-bold mb-1.5">
                 <span className="text-gray-400 font-medium mr-2">P.IVA:</span> {empresa.p_iva}
@@ -216,7 +216,7 @@ export default async function FaturaPrintPage(props: { params: Promise<{ id: str
           </div>
           <div className="text-[9px] text-gray-400 mt-10 md:text-center uppercase tracking-widest font-semibold flex justify-center items-center gap-2">
             <span className="w-12 h-[1px] bg-gray-200"></span>
-            Documento Emitido Via Essentia CRM
+            Documento Emitido Via Explora Aventura CRM
             <span className="w-12 h-[1px] bg-gray-200"></span>
           </div>
         </div>

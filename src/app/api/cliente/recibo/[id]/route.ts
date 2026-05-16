@@ -73,7 +73,7 @@ export async function GET(
     </head>
     <body>
       <div class="header">
-        <div class="logo">ESSENTIA TOURS</div>
+        <div class="logo">EXPLORA AVENTURA TOURS</div>
         <p>Recibo de Reserva #${dadosReserva.agendamentoId.substring(0, 8)}</p>
       </div>
 
@@ -81,7 +81,7 @@ export async function GET(
         <div class="info-card">
           <div class="info-title">Informações do Passeio</div>
           <p><strong>Passeio:</strong> ${dadosReserva.passeioNome}</p>
-          <p><strong>Data:</strong> ${dadosReserva.dataPasseio ? new Date(dadosReserva.dataPasseio).toLocaleDateString('pt-BR') : 'Data não informada'}</p>
+          <p><strong>Data:</strong> ${dadosReserva.dataPasseio ? new Date(dadosReserva.dataPasseio).toLocaleDateString('pt-PT') : 'Data não informada'}</p>
           <p><strong>Pessoas:</strong> ${dadosReserva.numeroPessoas}</p>
           <p><strong>Status:</strong> ${dadosReserva.status}</p>
         </div>
@@ -91,7 +91,7 @@ export async function GET(
           <p><strong>Nome:</strong> ${dadosReserva.clienteNome}</p>
           <p><strong>Email:</strong> ${dadosReserva.clienteEmail}</p>
           <p><strong>Telefone:</strong> ${dadosReserva.clienteTelefone}</p>
-          <p><strong>Data da Reserva:</strong> ${dadosReserva.criadoEm ? new Date(dadosReserva.criadoEm).toLocaleDateString('pt-BR') : 'Não informado'}</p>
+          <p><strong>Data da Reserva:</strong> ${dadosReserva.criadoEm ? new Date(dadosReserva.criadoEm).toLocaleDateString('pt-PT') : 'Não informado'}</p>
         </div>
       </div>
 
@@ -104,13 +104,13 @@ export async function GET(
 
       <div class="total">
         <p>Valor Total da Reserva</p>
-        <div class="total-value">R$ ${dadosReserva.valorTotal.toFixed(2)}</div>
+        <div class="total-value">€ ${dadosReserva.valorTotal.toFixed(2)}</div>
       </div>
 
       <div class="footer">
-        <p>Este é um recibo oficial da Essentia Tours</p>
+        <p>Este é um recibo oficial da Explora Aventura Tours</p>
         <p>Em caso de dúvidas, entre em contato conosco</p>
-        <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+        <p>Gerado em: ${new Date().toLocaleString('pt-PT')}</p>
       </div>
     </body>
     </html>

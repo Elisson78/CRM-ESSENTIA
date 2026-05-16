@@ -94,67 +94,67 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
   const getDadosFallback = (): Passeio[] => [
     {
       id: "fallback-1",
-      nome: "Tour Paris Romântica",
-      descricao: "Descubra os encantos de Paris com guias especializados. Visite a Torre Eiffel, Louvre e muito mais!",
-      preco: 150,
+      nome: "Rota do Chocolate e Café",
+      descricao: "Visite as históricas Roças Monte Café e Agostinho Neto. Deguste o melhor chocolate do mundo.",
+      preco: 45,
       duracao: "4h",
-      categoria: "Romance",
-      imagens: ["https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=1000"],
-      capacidadeMaxima: 15,
-      ativo: 1
-    },
-    {
-      id: "fallback-2",
-      nome: "Aventura nos Alpes",
-      descricao: "Trilhas incríveis pelos Alpes Suíços com vistas espetaculares e natureza preservada",
-      preco: 280,
-      duracao: "8h",
-      categoria: "Aventura",
-      imagens: ["https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000"],
-      capacidadeMaxima: 12,
-      ativo: 1
-    },
-    {
-      id: "fallback-3",
-      nome: "Gastronomia Italiana",
-      descricao: "Tour gastronômico pela Toscana com degustação de vinhos e pratos típicos",
-      preco: 200,
-      duracao: "6h",
-      categoria: "Gastronomia",
-      imagens: ["https://images.unsplash.com/photo-1541167760496-1628856ab752?auto=format&fit=crop&q=80&w=1000"],
-      capacidadeMaxima: 10,
-      ativo: 1
-    },
-    {
-      id: "fallback-4",
-      nome: "História de Roma",
-      descricao: "Explore o Coliseu, Fórum Romano e outros monumentos históricos com guias especializados",
-      preco: 120,
-      duracao: "5h",
-      categoria: "História",
-      imagens: ["https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=1000"],
-      capacidadeMaxima: 20,
-      ativo: 1
-    },
-    {
-      id: "fallback-5",
-      nome: "Arte e Cultura",
-      descricao: "Visite os principais museus e galerias de arte da cidade",
-      preco: 90,
-      duracao: "3h",
       categoria: "Cultural",
       imagens: ["https://images.unsplash.com/photo-1549490349-8643362247b5?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 15,
       ativo: 1
     },
     {
-      id: "fallback-6",
-      nome: "Natureza Selvagem",
-      descricao: "Explore parques nacionais e observe a fauna local em seu habitat natural",
-      preco: 180,
-      duracao: "7h",
+      id: "fallback-2",
+      nome: "Expedição ao Obô National Park",
+      description: "Trilhas pela selva densa até a Lagoa Amélia. Conheça a fauna e flora endêmica das ilhas.",
+      preco: 60,
+      duracao: "6h",
       categoria: "Natureza",
       imagens: ["https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=1000"],
+      capacidadeMaxima: 10,
+      ativo: 1
+    },
+    {
+      id: "fallback-3",
+      nome: "Observação de Tartarugas",
+      description: "Acompanhe a desova ou a soltura de tartarugas marinhas na Praia Jalé sob as estrelas.",
+      preco: 35,
+      duracao: "3h",
+      categoria: "Natureza",
+      imagens: ["https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1000"],
+      capacidadeMaxima: 12,
+      ativo: 1
+    },
+    {
+      id: "fallback-4",
+      nome: "Ilhéu das Rolas e Linha do Equador",
+      description: "Um dia inteiro na ilha onde o mundo se divide. Almoço com vista para o mar azul.",
+      preco: 75,
+      duracao: "8h",
+      categoria: "Aventura",
+      imagens: ["https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=1000"],
+      capacidadeMaxima: 20,
+      ativo: 1
+    },
+    {
+      id: "fallback-5",
+      nome: "Tour da Cidade de São Tomé",
+      description: "Descubra o Mercado Municipal, a Sé Catedral e a arquitetura colonial da capital.",
+      preco: 30,
+      duracao: "3h",
+      categoria: "Histórico",
+      imagens: ["https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&q=80&w=1000"],
+      capacidadeMaxima: 25,
+      ativo: 1
+    },
+    {
+      id: "fallback-6",
+      nome: "Mergulho na Lagoa Azul",
+      description: "Explore os recifes de coral e a vida marinha abundante nas águas mais claras da ilha.",
+      preco: 55,
+      duracao: "4h",
+      categoria: "Aventura",
+      imagens: ["https://images.unsplash.com/photo-1541167760496-1628856ab752?auto=format&fit=crop&q=80&w=1000"],
       capacidadeMaxima: 8,
       ativo: 1
     }
@@ -305,10 +305,10 @@ export default function PasseiosCards({ destaque = false, limite }: PasseiosCard
                     <Euro className="w-4 h-4 text-green-600" />
                     <div className="flex flex-col">
                       <span className="text-sm text-gray-500 line-through">
-                        R$ {Number(passeio.preco * 1.15).toFixed(2)}
+                        € {Number(passeio.preco * 1.15).toFixed(2)}
                       </span>
                       <span className="text-lg font-bold text-green-600">
-                        R$ {Number(passeio.preco).toFixed(2)}
+                        € {Number(passeio.preco).toFixed(2)}
                       </span>
                     </div>
                   </div>

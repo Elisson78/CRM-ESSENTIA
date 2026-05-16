@@ -257,7 +257,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
               />
             </div>
             <div>
-              <Label htmlFor="price">Preço (R$) *</Label>
+              <Label htmlFor="price">Preço (€) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -281,7 +281,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
             <h3 className="text-sm font-semibold text-gray-900">Tarifas por Número de Pessoas</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="tarifa2">Até 2 pessoas (R$)</Label>
+                <Label htmlFor="tarifa2">Até 2 pessoas (€)</Label>
                 <Input
                   id="tarifa2"
                   type="number"
@@ -290,7 +290,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                 />
               </div>
               <div>
-                <Label htmlFor="tarifa4">Até 4 pessoas (R$)</Label>
+                <Label htmlFor="tarifa4">Até 4 pessoas (€)</Label>
                 <Input
                   id="tarifa4"
                   type="number"
@@ -299,7 +299,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                 />
               </div>
               <div>
-                <Label htmlFor="tarifa6">Até 06 pessoas (R$)</Label>
+                <Label htmlFor="tarifa6">Até 06 pessoas (€)</Label>
                 <Input
                   id="tarifa6"
                   type="number"
@@ -308,7 +308,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                 />
               </div>
               <div>
-                <Label htmlFor="tarifa8">Até 08 pessoas (R$)</Label>
+                <Label htmlFor="tarifa8">Até 08 pessoas (€)</Label>
                 <Input
                   id="tarifa8"
                   type="number"
@@ -317,7 +317,7 @@ export default function AddTourModal({ isOpen, onClose, onSubmit, initialData, i
                 />
               </div>
               <div>
-                <Label htmlFor="tarifa10">Até 10 pessoas (R$)</Label>
+                <Label htmlFor="tarifa10">Até 10 pessoas (€)</Label>
                 <Input
                   id="tarifa10"
                   type="number"

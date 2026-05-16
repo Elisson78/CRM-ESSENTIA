@@ -132,8 +132,7 @@ export default function Confirmacao() {
                         <Badge variant="outline">{reserva.tipoReserva}</Badge>
                       </div>
                       <div className="flex items-center gap-2 text-gray-600">
-                        <Euro className="w-4 h-4" />
-                        <span className="font-semibold text-green-600">R$ {reserva.valorTotal.toFixed(2)}</span>
+                        <span className="font-semibold text-green-600">€ {reserva.valorTotal.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

@@ -429,23 +429,23 @@ export default function Checkout() {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal ({bookingData.pessoas}x)</span>
-                      <span>R$ {bookingData.valorOriginal.toFixed(2)}</span>
+                      <span>€ {bookingData.valorOriginal.toFixed(2)}</span>
                     </div>
                     {bookingData.desconto > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Desconto grupo (10%)</span>
-                        <span>-R$ {(bookingData.valorOriginal * bookingData.desconto).toFixed(2)}</span>
+                        <span>-€ {(bookingData.valorOriginal * bookingData.desconto).toFixed(2)}</span>
                       </div>
                     )}
                     {paymentMethod === "pix" && (
                       <div className="flex justify-between text-green-600">
                         <span>Desconto PIX (5%)</span>
-                        <span>-R$ {(bookingData.valorTotal * 0.05).toFixed(2)}</span>
+                        <span>-€ {(bookingData.valorTotal * 0.05).toFixed(2)}</span>
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-lg border-t pt-2">
                       <span>Total</span>
-                      <span>R$ {valorComPix.toFixed(2)}</span>
+                      <span>€ {valorComPix.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

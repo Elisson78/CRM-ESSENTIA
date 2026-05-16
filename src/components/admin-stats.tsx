@@ -93,7 +93,7 @@ export const AdminStats: React.FC = () => {
     },
     {
       title: "Receita Hoje",
-      value: "R$ 2.450,00",
+      value: "€ 2.450,00",
       change: 8,
       changeType: "increase" as const,
       icon: <DollarSign className="h-6 w-6" />,

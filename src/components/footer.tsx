@@ -2,6 +2,7 @@
 import { motion } from "framer-motion";
 import { Button } from "./ui/button";
 import { Instagram, MessageCircle, Mail, Phone, MapPin } from "lucide-react";
+import Link from "next/link";
 
 export default function Footer() {
   return (
@@ -15,20 +16,22 @@ export default function Footer() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h3 className="text-2xl font-bold text-blue-400 mb-4">ESSENTIA TRAVEL</h3>
+            <Link href="/">
+              <h3 className="text-2xl font-bold text-orange-400 mb-4 cursor-pointer">EXPLORA AVENTURA</h3>
+            </Link>
             <p className="text-gray-300 leading-relaxed mb-6">
-              Explore a Itália com quem entende. Sua jornada dos sonhos começa aqui.
+              Explore o mundo com quem entende. Sua aventura começa aqui.
             </p>
             <div className="flex space-x-4">
-              <Button 
-                size="icon" 
-                variant="outline" 
+              <Button
+                size="icon"
+                variant="outline"
                 className="border-gray-600 hover:bg-blue-600 hover:border-blue-600"
               >
                 <Instagram className="w-4 h-4" />
               </Button>
-              <Button 
-                size="icon" 
+              <Button
+                size="icon"
                 variant="outline"
                 className="border-gray-600 hover:bg-green-600 hover:border-green-600"
               >
@@ -47,24 +50,24 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Links Rápidos</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#roteiros" className="text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="/#roteiros" className="text-gray-300 hover:text-orange-400 transition-colors">
                   Nossos Roteiros
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#destinos" className="text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="/#destinos" className="text-gray-300 hover:text-orange-400 transition-colors">
                   Destinos
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#diferenciais" className="text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="/#diferenciais" className="text-gray-300 hover:text-orange-400 transition-colors">
                   Por que nos escolher
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="/" className="text-gray-300 hover:text-orange-400 transition-colors">
                   Depoimentos
-                </a>
+                </Link>
               </li>
             </ul>
           </motion.div>
@@ -95,12 +98,12 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4">Contato</h4>
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
-                <Mail className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">contato@essentia.travel</span>
+                <Mail className="w-4 h-4 text-orange-400" />
+                <span className="text-gray-300 text-sm">contact@explora-aventura.com</span>
               </div>
               <div className="flex items-center space-x-3">
-                <Phone className="w-4 h-4 text-blue-400" />
-                <span className="text-gray-300 text-sm">+39 123 456 789</span>
+                <Phone className="w-4 h-4 text-orange-400" />
+                <span className="text-gray-300 text-sm">+239 990 0000</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MessageCircle className="w-4 h-4 text-green-400" />
@@ -108,7 +111,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="w-4 h-4 text-red-400" />
-                <span className="text-gray-300 text-sm">Roma, Itália</span>
+                <span className="text-gray-300 text-sm">São Tomé, STP</span>
               </div>
             </div>
           </motion.div>
@@ -132,16 +135,16 @@ export default function Footer() {
           className="flex flex-col md:flex-row justify-between items-center"
         >
           <div className="text-gray-400 text-sm mb-4 md:mb-0">
-            © 2024 ESSENTIA TRAVEL. Todos os direitos reservados.
+            © 2024 EXPLORA AVENTURA. Todos os direitos reservados.
           </div>
           <div className="flex space-x-6 text-sm">
-            <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+            <a href="#" className="text-gray-400 hover:text-orange-400 transition-colors">
               Política de Privacidade
             </a>
-            <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+            <a href="#" className="text-gray-400 hover:text-orange-400 transition-colors">
               Termos de Uso
             </a>
-            <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+            <a href="#" className="text-gray-400 hover:text-orange-400 transition-colors">
               Cookies
             </a>
           </div>

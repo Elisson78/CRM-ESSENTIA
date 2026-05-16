@@ -89,7 +89,7 @@ const guiaMetrics: GuiaMetric[] = [
   },
   {
     title: "Comissões Pagas",
-    value: "R$ 66.280",
+    value: "€ 66.280",
     subtitle: "Este mês",
     growth: "",
     icon: <DollarSign className="h-6 w-6" />,
@@ -379,7 +379,7 @@ const GuiasPage: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-4">
                         <span className="font-medium text-sm text-green-600">
-                          R$ {guia.comissaoTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          € {guia.comissaoTotal.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}
                         </span>
                       </td>
                       <td className="py-2.5 px-4">

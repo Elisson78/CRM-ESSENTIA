@@ -50,11 +50,11 @@ export const AdminSidebar: React.FC = () => {
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="flex items-center gap-2 px-6 py-5 border-b border-gray-100">
-          <div className="p-2 bg-blue-600 rounded-lg flex-shrink-0">
+          <div className="p-2 bg-orange-600 rounded-lg flex-shrink-0">
             <MapPin className="h-5 w-5 text-white" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="font-bold text-base text-gray-900 truncate">Essentia CRM</h1>
+            <h1 className="font-bold text-base text-gray-900 truncate">Explora Aventura CRM</h1>
             <p className="text-xs text-gray-600 truncate">Administrador</p>
           </div>
         </div>
@@ -74,11 +74,11 @@ export const AdminSidebar: React.FC = () => {
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive
-                      ? "bg-blue-50 text-blue-700"
+                      ? "bg-orange-50 text-orange-700"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
-                  <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-blue-700' : 'text-gray-500'}`} />
+                  <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-orange-700' : 'text-gray-500'}`} />
                   <span className="truncate">{item.label}</span>
                 </Link>
               );
@@ -89,7 +89,7 @@ export const AdminSidebar: React.FC = () => {
         {/* Perfil do usuário */}
         <div className="border-t border-gray-100 p-4 bg-gray-50">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-sm font-semibold text-white">
                 {user?.nome?.charAt(0)?.toUpperCase() || 'A'}
               </span>

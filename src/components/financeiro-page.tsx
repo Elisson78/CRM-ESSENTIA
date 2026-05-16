@@ -179,7 +179,7 @@ const transactionsData: Transaction[] = [
 const financialMetrics: FinancialMetric[] = [
   {
     title: "Receita Total",
-    value: "R$ 15315.00",
+    value: "€ 15.315,00",
     growth: "+12%",
     icon: <DollarSign className="h-6 w-6" />,
     bgColor: "bg-green-50",
@@ -187,7 +187,7 @@ const financialMetrics: FinancialMetric[] = [
   },
   {
     title: "Receita Líquida",
-    value: "R$ 13025.35",
+    value: "€ 13.025,35",
     growth: "+8%",
     icon: <CreditCard className="h-6 w-6" />,
     bgColor: "bg-blue-50",
@@ -195,7 +195,7 @@ const financialMetrics: FinancialMetric[] = [
   },
   {
     title: "Comissões Pagas",
-    value: "R$ 2289.65",
+    value: "€ 2.289,65",
     subtitle: "1 guias",
     growth: "",
     icon: <Users className="h-6 w-6" />,
@@ -204,7 +204,7 @@ const financialMetrics: FinancialMetric[] = [
   },
   {
     title: "Receita Pendente",
-    value: "R$ 3460.00",
+    value: "€ 3.460,00",
     subtitle: "4 agendamentos",
     growth: "",
     icon: <FileText className="h-6 w-6" />,
@@ -418,7 +418,7 @@ const FinanceiroPage: React.FC = () => {
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Data</th>
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Cliente</th>
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Total EUR</th>
-                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Total BRL</th>
+                    <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Equivalente BRL</th>
                     <th className="text-left py-2 px-4 font-medium text-xs text-gray-600">Status</th>
                     <th className="text-right py-2 px-4 font-medium text-xs text-gray-600">Ações</th>
                   </tr>

@@ -191,7 +191,7 @@ export default function NovaFaturaModal({ isOpen, onClose, onSuccess }: NovaFatu
               </div>
 
               <div className="space-y-2 group relative">
-                <Label htmlFor="cotacao">Taxa Câmbio Turismo (R$ para 1€) *</Label>
+                <Label htmlFor="cotacao">Taxa Câmbio (1€ para R$)</Label>
                 <Input
                   id="cotacao"
                   type="number"
@@ -200,7 +200,7 @@ export default function NovaFaturaModal({ isOpen, onClose, onSuccess }: NovaFatu
                   onChange={(e) => setCotacaoCambio(Number(e.target.value))}
                   required
                 />
-                <div className="text-xs text-gray-500 mt-1">Usado para cálculo final em reais.</div>
+                <div className="text-xs text-gray-500 mt-1">Informativo: Valor aproximado em Reais.</div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -302,7 +302,10 @@ export default function NovaFaturaModal({ isOpen, onClose, onSuccess }: NovaFatu
                   <span>x {cotacaoCambio}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-2 mt-2">
-                  <span>Total a Pagar:</span>
+                  <span>€ {totalEur.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>Equivalente:</span>
                   <span>R$ {totalBrl.toFixed(2)}</span>
                 </div>
               </div>

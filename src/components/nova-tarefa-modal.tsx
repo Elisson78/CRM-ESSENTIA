@@ -162,7 +162,7 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
                         <div className="flex flex-col">
                           <span className="font-medium">{passeio.nome}</span>
                           <span className="text-sm text-gray-500">
-                            R$ {passeio.preco.toFixed(2)} • {passeio.duracao}
+                            € {passeio.preco.toFixed(2)} • {passeio.duracao}
                           </span>
                         </div>
                       </SelectItem>
@@ -371,7 +371,7 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
                   value={formData.comissaoPercentual}
                   onChange={(e) => setFormData(prev => ({ ...prev, comissaoPercentual: parseFloat(e.target.value) || 0 }))}
                 />
-                <p className="text-sm text-gray-600">R$ {comissaoValor.toFixed(2)}</p>
+                <p className="text-sm text-gray-600">€ {comissaoValor.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -380,8 +380,8 @@ const NovaTarefaModal: React.FC<NovaTarefaModalProps> = ({
           {selectedPasseio && (
             <div className="bg-gray-50 p-4 rounded-lg space-y-2">
               <div className="flex justify-between items-center">
-                <span className="font-medium">Total: R$ {valorTotal.toFixed(2)}</span>
-                <span className="font-medium text-blue-600">Comissão: R$ {comissaoValor.toFixed(2)}</span>
+                <span className="font-medium">Total: € {valorTotal.toFixed(2)}</span>
+                <span className="font-medium text-blue-600">Comissão: € {comissaoValor.toFixed(2)}</span>
               </div>
             </div>
           )}

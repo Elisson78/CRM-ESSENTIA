@@ -15,19 +15,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ESSENTIA TRAVEL - Explore a Itália com quem entende",
-  description: "Descubra a magia da Itália com roteiros personalizados, guias locais experientes e experiências autênticas. Turismo romântico, em grupo e cultural.",
+  title: "EXPLORA AVENTURA - Descubra São Tomé e Príncipe com quem entende",
+  description: "Explore a magia das ilhas de São Tomé e Príncipe. Roteiros personalizados, guias locais experientes e experiências autênticas em roças, praias e natureza selvagem.",
   openGraph: {
-    title: "ESSENTIA TRAVEL - Explore a Itália com quem entende",
-    description: "Descubra a magia da Itália com roteiros personalizados, guias locais experientes e experiências autênticas.",
+    title: "EXPLORA AVENTURA - Descubra São Tomé e Príncipe com quem entende",
+    description: "Explore a magia das ilhas de São Tomé e Príncipe. Roteiros personalizados, guias locais experientes e experiências autênticas.",
     type: "website",
     locale: "pt_BR",
-    siteName: "ESSENTIA TRAVEL",
+    siteName: "EXPLORA AVENTURA",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ESSENTIA TRAVEL - Explore a Itália com quem entende",
-    description: "Descubra a magia da Itália com roteiros personalizados, guias locais experientes e experiências autênticas.",
+    title: "EXPLORA AVENTURA - Descubra São Tomé e Príncipe com quem entende",
+    description: "Explore a magia das ilhas de São Tomé e Príncipe. Roteiros personalizados, guias locais experientes e experiências autênticas.",
   },
 };
 
@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans?.variable || ""} ${geistMono?.variable || ""} antialiased`}
         suppressHydrationWarning
       >
         <Providers>

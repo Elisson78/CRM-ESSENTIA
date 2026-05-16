@@ -97,7 +97,7 @@ export const AdminMobileNav: React.FC<MobileNavProps> = ({
                 </div>
                 <div>
                   <h1 className="font-bold text-lg text-gray-900">
-                    Essentia CRM
+                    Explora Aventura CRM
                   </h1>
                   <p className="text-sm text-gray-600">Administrador</p>
                 </div>

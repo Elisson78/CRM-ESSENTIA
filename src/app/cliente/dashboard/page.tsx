@@ -301,7 +301,7 @@ export default function ClienteDashboard() {
                   <CreditCard className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">R$ {reservas.reduce((total, r) => total + r.valorTotal, 0).toFixed(2)}</div>
+                  <div className="text-2xl font-bold">€ {reservas.reduce((total, r) => total + r.valorTotal, 0).toFixed(2)}</div>
                   <p className="text-xs text-muted-foreground">Em todas as reservas</p>
                 </CardContent>
               </Card>
@@ -334,7 +334,7 @@ export default function ClienteDashboard() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">R$ {reserva.valorTotal.toFixed(2)}</p>
+                      <p className="font-semibold">€ {reserva.valorTotal.toFixed(2)}</p>
                       <Badge variant="outline" className="text-xs">{reserva.status}</Badge>
                     </div>
                   </div>
@@ -378,7 +378,7 @@ export default function ClienteDashboard() {
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="outline">{reserva.status}</Badge>
-                          <span className="text-lg font-bold text-green-600">R$ {reserva.valorTotal.toFixed(2)}</span>
+                          <span className="text-lg font-bold text-green-600">€ {reserva.valorTotal.toFixed(2)}</span>
                         </div>
                       </div>
                       <Button

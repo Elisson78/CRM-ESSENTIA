@@ -1,10 +1,10 @@
 // Utilitários para formatação consistente entre servidor e cliente
 import { useState, useEffect } from 'react';
 
-export function formatCurrency(value: number, locale: string = 'pt-BR'): string {
+export function formatCurrency(value: number, locale: string = 'pt-PT'): string {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'BRL',
+    currency: 'EUR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);

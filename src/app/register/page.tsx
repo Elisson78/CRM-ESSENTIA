@@ -101,7 +101,7 @@ export default function RegisterPage() {
       >
         <Card className="border shadow-lg bg-white">
           <CardHeader className="space-y-1 text-center pb-6 border-b bg-gray-50/50">
-            <h1 className="text-3xl font-bold tracking-tight text-blue-900">ESSENTIA</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-orange-600">EXPLORA AVENTURA</h1>
             <CardTitle className="text-xl text-gray-800">Crie sua conta</CardTitle>
             <CardDescription>
               Preencha os dados abaixo para se cadastrar
@@ -215,7 +215,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all mt-2"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all mt-2"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -235,9 +235,9 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-4 text-center text-sm">
               <Link
                 href="/login"
-                className="text-muted-foreground hover:text-blue-600 transition-colors"
+                className="text-muted-foreground hover:text-orange-600 transition-colors"
               >
-                Já tem uma conta? <span className="font-medium text-blue-600">Fazer login</span>
+                Já tem uma conta? <span className="font-medium text-orange-600">Fazer login</span>
               </Link>
               <Link
                 href="/"

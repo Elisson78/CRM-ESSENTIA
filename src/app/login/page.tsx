@@ -80,10 +80,10 @@ function LoginForm() {
       >
         <Card className="border shadow-lg bg-white">
           <CardHeader className="space-y-1 text-center pb-6 border-b bg-white">
-            <h1 className="text-3xl font-bold tracking-tight text-blue-900">ESSENTIA</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-orange-600">EXPLORA AVENTURA</h1>
             <CardTitle className="text-xl text-gray-800">Acesse sua conta</CardTitle>
             <CardDescription className="text-gray-500">
-              Bem-vindo ao Essentia CRM
+              Bem-vindo ao Explora Aventura CRM
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
@@ -134,7 +134,7 @@ function LoginForm() {
 
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold transition-all"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -154,9 +154,9 @@ function LoginForm() {
             <div className="flex flex-col gap-4 text-center text-sm">
               <Link
                 href="/register"
-                className="text-muted-foreground hover:text-blue-600 transition-colors"
+                className="text-muted-foreground hover:text-orange-600 transition-colors"
               >
-                Não tem uma conta? <span className="font-medium text-blue-600">Cadastre-se</span>
+                Não tem uma conta? <span className="font-medium text-orange-600">Cadastre-se</span>
               </Link>
               <Link
                 href="/"

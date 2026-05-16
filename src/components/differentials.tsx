@@ -6,9 +6,9 @@ import { Users, Clock, MapPin, MessageCircle, Award } from "lucide-react";
 export default function Differentials() {
   const differentials = [
     {
-      icon: <Users className="w-8 h-8 text-blue-500" />,
+      icon: <Users className="w-8 h-8 text-orange-500" />,
       title: "Guias Locais Experientes",
-      description: "Nossos guias nasceram na Itália e conhecem cada segredo dos destinos"
+      description: "Nossos guias são nativos das ilhas e conhecem cada trilha e segredo de STP"
     },
     {
       icon: <Clock className="w-8 h-8 text-green-500" />,
@@ -28,7 +28,7 @@ export default function Differentials() {
     {
       icon: <Award className="w-8 h-8 text-red-500" />,
       title: "Experiências Autênticas",
-      description: "Conectamos você com a verdadeira cultura italiana, longe do turismo de massa"
+      description: "Conectamos você com a verdadeira cultura santomense, o 'Leve Leve' e a natureza pura"
     }
   ];
 
@@ -62,10 +62,10 @@ export default function Differentials() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800">
-            Por que escolher a ESSENTIA TRAVEL?
+            Por que escolher a EXPLORA AVENTURA?
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Mais de 10 anos conectando brasileiros à verdadeira essência da Itália
+            Especialistas em conectar viajantes à verdadeira essência de São Tomé e Príncipe
           </p>
         </motion.div>
 
@@ -78,7 +78,7 @@ export default function Differentials() {
         >
           {differentials.map((differential, index) => (
             <motion.div key={index} variants={itemVariants}>
-              <Card className="h-full hover:shadow-lg transition-all duration-300 group border-l-4 border-l-transparent hover:border-l-blue-500">
+              <Card className="h-full hover:shadow-lg transition-all duration-300 group border-l-4 border-l-transparent hover:border-l-orange-500">
                 <CardContent className="p-6">
                   <motion.div
                     className="mb-4"
@@ -87,7 +87,7 @@ export default function Differentials() {
                   >
                     {differential.icon}
                   </motion.div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800 group-hover:text-blue-600 transition-colors">
+                  <h3 className="text-lg font-semibold mb-3 text-gray-800 group-hover:text-orange-600 transition-colors">
                     {differential.title}
                   </h3>
                   <p className="text-muted-foreground leading-relaxed">
@@ -108,15 +108,15 @@ export default function Differentials() {
           className="mt-20 grid md:grid-cols-3 gap-8 text-center"
         >
           <div className="space-y-2">
-            <div className="text-3xl font-bold text-blue-600">500+</div>
+            <div className="text-3xl font-bold text-orange-600">500+</div>
             <div className="text-muted-foreground">Viajantes satisfeitos</div>
           </div>
           <div className="space-y-2">
-            <div className="text-3xl font-bold text-blue-600">15+</div>
+            <div className="text-3xl font-bold text-orange-600">15+</div>
             <div className="text-muted-foreground">Cidades cobertas</div>
           </div>
           <div className="space-y-2">
-            <div className="text-3xl font-bold text-blue-600">4.9★</div>
+            <div className="text-3xl font-bold text-orange-600">4.9★</div>
             <div className="text-muted-foreground">Avaliação média</div>
           </div>
         </motion.div>

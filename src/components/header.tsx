@@ -5,42 +5,53 @@ import Link from "next/link";
 import { User, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Header() {
   const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const scrollToSection = (sectionId: string) => {
+    if (pathname !== "/") {
+      router.push(`/#${sectionId}`);
+      return;
+    }
+
+    // Dispara a mudança de aba para o componente Destinations
+    if (sectionId === 'destinos' || sectionId === 'passeios') {
+      const event = new HashChangeEvent('hashchange');
+      window.location.hash = sectionId;
+      window.dispatchEvent(event);
+    } else {
+      window.location.hash = sectionId;
+    }
+
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
+    setIsMobileMenuOpen(false);
   };
 
   const scrollToPasseios = () => {
-    const element = document.getElementById('destinos');
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-      // Aguardar um pouco e então activar os passeios
-      setTimeout(() => {
-        const buttons = document.querySelectorAll('button');
-        for (const button of buttons) {
-          if (button.textContent?.includes('Ver Passeios')) {
-            button.click();
-            break;
-          }
-        }
-      }, 500);
+    if (pathname !== "/") {
+      router.push("/#passeios");
+    } else {
+      window.location.hash = "passeios";
+      document.getElementById("destinos")?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center max-w-full">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-blue-600">ESSENTIA</h1>
+          <Link href="/">
+            <h1 className="text-2xl font-bold text-orange-600 cursor-pointer">EXPLORA AVENTURA</h1>
+          </Link>
           <span className="ml-2 text-sm text-muted-foreground hidden sm:block">
-
           </span>
         </div>
 
@@ -138,7 +149,9 @@ export default function Header() {
                 {/* Header do Menu */}
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center">
-                    <h1 className="text-xl font-bold text-blue-600">ESSENTIA TRAVEL</h1>
+                    <Link href="/" onClick={() => setIsMobileMenuOpen(false)}>
+                      <h1 className="text-xl font-bold text-orange-600">EXPLORA AVENTURA</h1>
+                    </Link>
                   </div>
                   <Button
                     variant="ghost"
@@ -156,7 +169,7 @@ export default function Header() {
                       scrollToSection('roteiros');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium"
+                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors font-medium"
                   >
                     🗺️ Roteiros
                   </button>
@@ -166,9 +179,9 @@ export default function Header() {
                       scrollToSection('destinos');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium"
+                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors font-medium"
                   >
-                    🏛️ Destinos
+                    🏝️ Destinos
                   </button>
 
                   <button
@@ -186,7 +199,7 @@ export default function Header() {
                       scrollToSection('diferenciais');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium"
+                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors font-medium"
                   >
                     ⭐ Por que nos escolher
                   </button>
@@ -196,7 +209,7 @@ export default function Header() {
                       scrollToSection('contato');
                       setIsMobileMenuOpen(false);
                     }}
-                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors font-medium"
+                    className="w-full text-left py-3 px-4 rounded-lg text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors font-medium"
                   >
                     📞 Contato
                   </button>
